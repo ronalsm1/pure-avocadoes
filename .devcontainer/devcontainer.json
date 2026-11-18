@@ -1,0 +1,35 @@
+
+{
+  "name": "Pure Avocadoes - .NET 10 + MySQL 8.4",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:10.0",
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:4": {}
+  },
+
+  "containerEnv": {
+    "ASPNETCORE_ENVIRONMENT": "Development"
+  },
+
+  "forwardPorts": [
+    5058
+  ],
+
+  "portsAttributes": {
+    "5058": {
+      "label": "Pure Avocadoes ASP.NET Core",
+      "visibility": "private"
+    }
+  },
+
+  "postCreateCommand": "dotnet restore PureAvocadoes.csproj && dotnet tool restore",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-azuretools.vscode-containers"
+      ]
+    }
+  }
+}
