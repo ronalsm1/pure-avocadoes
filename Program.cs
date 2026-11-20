@@ -3,12 +3,18 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PureAvocadoes.Data;
 using PureAvocadoes.Models;
+using PureAvocadoes.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<AccountService>();
+builder.Services.AddScoped<MovieService>();
+builder.Services.AddScoped<ReviewService>();
+builder.Services.AddScoped<AdminUserService>();
+builder.Services.AddScoped<AdminDashboardService>();
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "RequestVerificationToken";
