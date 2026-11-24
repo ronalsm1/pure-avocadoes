@@ -1,0 +1,41 @@
+@model PureAvocadoes.ViewModels.MovieCardViewModel
+@{
+    var isHero = ViewData["IsHeroPoster"] is true;
+    var safePosterUrl = PureAvocadoes.ViewModels.MovieCardViewModel.SanitizePosterUrl(Model.PosterUrl);
+}
+@* The frame reserves the 2:3 poster box before the image loads, so the grid
+   never reflows as posters arrive. *@
+<div class="relative aspect-[2/3] w-full overflow-hidden rounded-card bg-avocado-900">
+    @if (!string.IsNullOrEmpty(safePosterUrl))
+    {
+        if (isHero)
+        {
+            <img class="block h-full w-full object-cover"
+                 src="@safePosterUrl"
+                 alt="Poster for @Model.Title"
+                 width="300"
+                 height="450"
+                 fetchpriority="high"
+                 data-poster-img />
+        }
+        else
+        {
+            <img class="block h-full w-full object-cover"
+                 src="@safePosterUrl"
+                 alt="Poster for @Model.Title"
+                 width="300"
+                 height="450"
+                 loading="lazy"
+                 data-poster-img />
+        }
+        <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-avocado-900 px-3 text-center" hidden data-poster-fallback>
+            <partial name="_PosterFallbackMark" model="Model" />
+        </div>
+    }
+    else
+    {
+        <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-[#232F26] to-[#131A14] px-3 text-center">
+            <partial name="_PosterFallbackMark" model="Model" />
+        </div>
+    }
+</div>
