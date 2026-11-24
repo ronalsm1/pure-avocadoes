@@ -1,0 +1,415 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+@layer base {
+    html {
+        -webkit-text-size-adjust: 100%;
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-paper-alt font-sans text-ink antialiased;
+        font-size: 1rem;
+        line-height: 1.5;
+        letter-spacing: 0.016em;
+        /* `clip` contains stray horizontal overflow without creating a scroll
+           container, so position: sticky keeps working. */
+        overflow-x: clip;
+    }
+
+    /* One focus treatment for the whole app: a gold ring that reads clearly on
+       both the dark chrome and the light page. */
+    :focus-visible {
+        outline: 2px solid #d6ac55;
+        outline-offset: 2px;
+    }
+
+    /* R-39: every enabled control signals clickability, disabled ones do not. */
+    a[href],
+    button:not([disabled]),
+    summary,
+    select,
+    label[for],
+    input[type="checkbox"],
+    input[type="radio"],
+    [role="button"] {
+        cursor: pointer;
+    }
+
+    button[disabled],
+    [aria-disabled="true"] {
+        cursor: not-allowed;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+        line-height: 1.2;
+        text-wrap: balance;
+    }
+
+    img {
+        max-width: 100%;
+    }
+
+    /* Tailwind's display utilities (flex, inline-flex, grid, block) beat the UA
+       `[hidden] { display: none }` rule on specificity, so anything toggled via
+       the hidden attribute or `hidden` class would stay visible. Enforce it here
+       with !important so dialogs, drawers and the search clear button behave. */
+    [hidden] {
+        display: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        html {
+            scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+            transition-duration: 0.01ms !important;
+            animation-duration: 0.01ms !important;
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Components
+   Only genuinely repeated primitives live here. Everything one-off is written
+   as utilities in the Razor markup.
+   -------------------------------------------------------------------------- */
+@layer components {
+    .container-page {
+        @apply mx-auto w-full max-w-[68.75rem] px-4 md:px-[0.9375rem];
+    }
+
+    /* Buttons ------------------------------------------------------------ */
+    .btn {
+        @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-control px-4 text-sm font-semibold uppercase tracking-[0.04em] transition-colors duration-150;
+    }
+
+    .btn-sm {
+        @apply min-h-8 px-3 text-xs;
+    }
+
+    .btn-block {
+        @apply w-full;
+    }
+
+    .btn-primary {
+        @apply bg-avocado-500 text-white hover:bg-avocado-900;
+    }
+
+    .btn-secondary {
+        @apply border border-line-strong bg-white text-ink hover:border-avocado-400 hover:bg-avocado-100;
+    }
+
+    .btn-gold {
+        @apply bg-gold-500 text-[#3A2C08] hover:bg-gold-600 hover:text-white;
+    }
+
+    .btn-danger {
+        @apply bg-danger-fg text-white hover:bg-[#6f241d];
+    }
+
+    .btn-danger-outline {
+        @apply border border-danger-line bg-white text-danger-fg hover:bg-danger-bg;
+    }
+
+    .btn-outline-invert {
+        @apply border border-white/45 text-white hover:border-white hover:bg-white/15;
+    }
+
+    /* Form controls ------------------------------------------------------ */
+    .field-label {
+        @apply mb-1.5 block text-[0.8125rem] font-semibold uppercase tracking-[0.05em] text-avocado-900;
+    }
+
+    .field {
+        @apply block w-full rounded-control border border-line-strong bg-white px-3 py-2.5 text-base text-ink transition-colors duration-150 placeholder:text-ink-faint focus:border-avocado-400;
+    }
+
+    .field-error {
+        @apply mt-1 block text-[0.8125rem] font-medium text-danger-fg;
+    }
+
+    .form-group {
+        @apply mb-4;
+    }
+
+    /* Surfaces ----------------------------------------------------------- */
+    .card {
+        @apply rounded-card border border-line bg-white p-5 md:p-6;
+    }
+
+    /* Section headings: RT's signature is a short accent bar left of a
+       condensed uppercase title. */
+    .section-title {
+        @apply flex items-center gap-2.5 font-display text-[1.25rem] font-medium uppercase tracking-[0.035em] text-ink;
+    }
+
+    .section-title::before {
+        content: "";
+        @apply block h-[1.15em] w-[3px] shrink-0 bg-avocado-400;
+    }
+
+    .kicker {
+        @apply block font-display text-[0.8125rem] font-medium uppercase tracking-[0.16em] text-avocado-500;
+    }
+
+    .kicker-invert {
+        @apply text-avocado-200;
+    }
+
+    /* Score badge: the one place gold is allowed to carry information. */
+    .score-badge {
+        @apply inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-ink;
+    }
+
+    /* Chips / filter selects --------------------------------------------- */
+    .chip {
+        @apply inline-flex items-center gap-1.5 rounded-control border border-line-strong bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.04em] text-ink transition-colors duration-150 hover:border-avocado-400;
+    }
+
+    /* Alerts ------------------------------------------------------------- */
+    .alert {
+        @apply relative mb-4 flex items-start justify-between gap-3 rounded-control border px-4 py-3 text-sm;
+    }
+
+    .alert-success {
+        @apply border-success-line bg-success-bg text-success-fg;
+    }
+
+    .alert-danger {
+        @apply border-danger-line bg-danger-bg text-danger-fg;
+    }
+
+    .alert-warning {
+        @apply border-warning-line bg-warning-bg text-warning-fg;
+    }
+
+    /* Data table --------------------------------------------------------- */
+    .data-table {
+        @apply w-full border-collapse text-left text-sm;
+    }
+
+    .data-table thead th {
+        @apply border-b border-line bg-paper-alt px-3 py-2.5 text-[0.6875rem] font-semibold uppercase tracking-[0.07em] text-ink-muted;
+    }
+
+    .data-table tbody td {
+        @apply border-b border-line px-3 py-3 align-middle;
+    }
+
+    .data-table tbody tr:last-child td {
+        @apply border-b-0;
+    }
+
+    .data-table tbody tr:hover {
+        @apply bg-paper-alt;
+    }
+
+    /* Empty state -------------------------------------------------------- */
+    .empty-state {
+        @apply rounded-card border border-dashed border-line-strong bg-white px-6 py-12 text-center;
+    }
+
+    .empty-state h2,
+    .empty-state h3 {
+        @apply mb-2 text-lg font-semibold text-ink;
+    }
+
+    .empty-state p {
+        @apply mx-auto mb-5 max-w-lg text-sm text-ink-muted;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Page-specific detail that utilities alone cannot express
+   -------------------------------------------------------------------------- */
+
+/* Search field: strip the native WebKit clear button so the markup can render
+   a white one that matches the chrome. The blue default X violates both the
+   palette and the contrast budget on the dark green field. */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-results-button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Hero carousel. The active slide is the only one shown; state lives on the
+   is-active class that setupHeroCarousel toggles, so autoplay and the
+   prev/next/dot controls all drive the same thing. */
+[data-hero-slide] {
+    opacity: 0;
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-hero-slide].is-active {
+    opacity: 1;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+[data-hero-dot] {
+    background-color: rgba(255, 255, 255, 0.45);
+}
+
+[data-hero-dot]:hover {
+    background-color: rgba(255, 255, 255, 0.75);
+}
+
+[data-hero-dot].is-active {
+    background-color: var(--color-gold-500, #d6ac55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-hero-slide] {
+        transition: none;
+    }
+}
+
+/* Details page: a sticky hero with the details card sliding up over it, like one
+   card being dealt onto another. The hero pins to the top of the screen while the
+   card below scrolls up and covers it; the hero title shrinks into the top bar
+   over the same span of scroll. */
+.details-hero {
+    position: sticky;
+    top: 0;
+    z-index: 0;
+    height: clamp(22rem, 68vh, 40rem);
+    overflow: hidden;
+}
+
+/* The covering card. The negative top margin makes its rounded corners bite into
+   the hero so it reads as a separate sheet, not a continuation of it. */
+.details-panel {
+    position: relative;
+    z-index: 20;
+    margin-top: -1.5rem;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    background-color: #f5f6ef;
+    box-shadow: 0 -10px 30px rgba(16, 22, 15, 0.22);
+}
+
+/* Condensed title card on the details page. Taller on small screens so the
+   title and its button are not squeezed against the edges. */
+.sticky-movie-bar {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 90;
+    height: 3.75rem;
+    visibility: hidden;
+}
+
+@media (min-width: 640px) {
+    .sticky-movie-bar {
+        height: 52px;
+    }
+}
+
+/* Extra inset on narrow screens; the shared container padding alone left the
+   title and button almost touching the screen edges. */
+.sticky-movie-bar .container-page {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+}
+
+@media (min-width: 640px) {
+    .sticky-movie-bar .container-page {
+        padding-left: 0.9375rem;
+        padding-right: 0.9375rem;
+    }
+}
+
+.sticky-movie-bar[data-visible="true"] {
+    visibility: visible;
+}
+
+/* Ramps up only as the title nears the top, so the bar never paints a solid
+   green band over the header while the title is still sitting in the hero. */
+.sticky-movie-bar__surface {
+    position: absolute;
+    inset: 0;
+    background-color: #1f3d2a;
+    opacity: clamp(0, calc((var(--morph-progress, 0) - 0.82) * 5.6), 1);
+    box-shadow: 0 2px 10px rgba(16, 22, 15, 0.28);
+}
+
+/* Year, score and the review button only appear once the title has landed in
+   the bar, so the shrinking title is never competing with the bar's chrome. */
+.sticky-movie-bar__chrome {
+    opacity: clamp(0, calc((var(--morph-progress, 0) - 0.95) * 20), 1);
+}
+
+/* The morphing title. Laid out at the hero heading's own size, then translated
+   onto the hero title and scaled down into the bar slot. This is the one title
+   the user sees: the real <h1> in the hero is transparent and only reserves
+   space, so the ghost must never fade out.
+   It stays hidden until JS has measured the two positions and switched <html> to
+   data-morph="active"; otherwise it would flash unpositioned at the top-left
+   before the first frame. */
+.morph-title {
+    position: fixed;
+    top: 0;
+    left: 0;
+    /* Above the covering card (z-20) so the title stays visible as the card
+       slides up beneath it. */
+    z-index: 95;
+    display: none;
+    margin: 0;
+    color: #fff;
+    font-weight: 700;
+    line-height: 1.15;
+    /* Kept on one line so it lands in the bar as a single row. JS shrinks the
+       font size when the title is too wide for the column. */
+    white-space: nowrap;
+    transform-origin: top left;
+    pointer-events: none;
+}
+
+html[data-morph="active"] .morph-title {
+    display: block;
+}
+
+/* The hero's supporting copy and action row step aside as the title leaves, so
+   the bar's own controls are not duplicated just below it. */
+[data-hero-meta] {
+    opacity: clamp(0, calc(1 - var(--morph-progress, 0) * 4), 1);
+    transition: opacity 120ms linear;
+}
+
+/* Reduced motion: skip the morph entirely. The real heading becomes the visible
+   one again and the floating copy is removed, so nothing travels on scroll. */
+html[data-morph="reduced"] .morph-title {
+    display: none;
+}
+
+html[data-morph="reduced"] [data-hero-title-anchor] {
+    visibility: visible;
+}
+
+html[data-morph="reduced"] [data-hero-meta] {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sticky-movie-bar__surface {
+        opacity: 1;
+    }
+
+    .sticky-movie-bar__chrome {
+        opacity: 1;
+    }
+}
