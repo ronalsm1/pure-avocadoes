@@ -1,0 +1,505 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var currentGenre = Context.Request.Query["genre"].ToString();
+    var isHomeActive = string.Equals(currentController, "Home", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(currentAction, "Index", StringComparison.OrdinalIgnoreCase);
+    var isMoviesActive = string.Equals(currentController, "Movies", StringComparison.OrdinalIgnoreCase);
+    var isMyReviewsActive = string.Equals(currentController, "Reviews", StringComparison.OrdinalIgnoreCase);
+    var isProfileActive = string.Equals(currentController, "Account", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(currentAction, "Profile", StringComparison.OrdinalIgnoreCase);
+    var isPrivacyActive = string.Equals(currentController, "Home", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(currentAction, "Privacy", StringComparison.OrdinalIgnoreCase);
+    var isAdminActive = currentController.StartsWith("Admin", StringComparison.OrdinalIgnoreCase);
+    var currentSearch = Context.Request.Query["search"].ToString();
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var isAdmin = isAuthenticated && User.IsInRole("Admin");
+    var displayName = User.Identity?.Name ?? "Account";
+    var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "member@pureavocadoes.local";
+    var userInitial = string.IsNullOrWhiteSpace(displayName)
+        ? "A"
+        : displayName.Trim()[0].ToString().ToUpperInvariant();
+
+    // Shared tab styling. The active and hovered states both fill the tab white
+    // and switch to ink text, so a hovered item never lands on a low-contrast
+    // translucent panel the way the old background-only hover did.
+    const string navTabBase = "flex items-center rounded-t-lg px-3.5 py-3 font-display text-[0.95rem] font-medium uppercase tracking-[0.9px] whitespace-nowrap transition-colors duration-150";
+    const string navTabIdle = "text-white hover:bg-white hover:text-ink";
+    const string navTabActive = "bg-white text-ink";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="request-verification-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+    <title>@ViewData["Title"] - Pure Avocadoes</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <a href="#main-content"
+       class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-control focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink">
+        Skip to main content
+    </a>
+
+    <header class="bg-avocado-800 text-white">
+        <div class="container-page flex min-h-[100px] items-stretch gap-3 max-lg:min-h-[58px] max-lg:items-center max-lg:gap-2.5">
+
+            <button type="button"
+                    id="mobile-nav-toggle"
+                    class="my-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-white transition-colors duration-150 hover:bg-white/15 lg:hidden"
+                    aria-label="Open navigation menu"
+                    aria-expanded="false"
+                    aria-controls="mobile-nav-drawer">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+            </button>
+
+            <a class="my-auto flex shrink-0 items-center gap-2.5 text-white hover:text-white lg:mr-8 max-lg:mr-1"
+               asp-controller="Home" asp-action="Index" aria-label="Pure Avocadoes home">
+                <svg class="block h-[50px] w-[50px] shrink-0 max-lg:h-[35px] max-lg:w-[35px]" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                    <path d="M16 3C11.2 3 7 10.6 7 18.2C7 24.4 10.9 29 16 29C21.1 29 25 24.4 25 18.2C25 10.6 20.8 3 16 3Z" fill="#B8C98A" stroke="#1F3D2A" stroke-width="1.5" />
+                    <circle cx="16" cy="19.5" r="4.8" fill="#D6AC55" stroke="#1F3D2A" stroke-width="1.5" />
+                </svg>
+                <span class="flex flex-col font-display text-[1.32rem] font-medium uppercase leading-[1.04] tracking-[0.9px] max-lg:text-[1.2rem]">
+                    <span>Pure</span>
+                    <span>Avocadoes</span>
+                </span>
+            </a>
+
+            <form class="my-auto mr-6 flex min-w-0 max-w-[367px] flex-1 basis-[367px] max-lg:mr-0 max-lg:max-w-none max-lg:basis-0"
+                  method="get" action="/Movies" role="search" aria-label="Movie search">
+                <label class="sr-only" for="nav-search">Search movies</label>
+                <div class="flex w-full items-stretch overflow-hidden rounded-full border border-white/25 bg-avocado-700 text-white transition-colors duration-150 hover:border-white/45 focus-within:border-avocado-200">
+
+                    <input id="nav-search"
+                           name="search"
+                           type="search"
+                           value="@currentSearch"
+                           placeholder="Search"
+                           class="min-w-0 flex-1 border-0 bg-transparent py-2 pl-5 pr-2 text-base text-white placeholder:text-avocado-200/80 focus:outline-none"
+                           data-search-input />
+
+                    <button type="button"
+                            class="flex w-9 shrink-0 items-center justify-center text-white/90 transition-colors duration-150 hover:text-white"
+                            aria-label="Clear search"
+                            data-search-clear
+                            hidden>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
+                            <line x1="5" y1="5" x2="19" y2="19" />
+                            <line x1="19" y1="5" x2="5" y2="19" />
+                        </svg>
+                    </button>
+
+                    <button type="submit"
+                            class="flex w-11 shrink-0 items-center justify-center text-avocado-200/90 transition-colors duration-150 hover:text-white"
+                            aria-label="Submit search">
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                            <circle cx="9" cy="9" r="5.5" />
+                            <line x1="13.2" y1="13.2" x2="17" y2="17" />
+                        </svg>
+                    </button>
+                </div>
+            </form>
+
+            <div class="ml-auto flex shrink-0 flex-col items-end justify-between pt-2.5 max-lg:hidden">
+
+                <div class="flex items-center gap-[15px]">
+                    <a class="text-sm font-medium text-white transition-colors duration-150 hover:text-avocado-200 @(isPrivacyActive ? "text-avocado-200" : "")"
+                       asp-controller="Home" asp-action="Privacy">About Pure Avocadoes&reg;</a>
+
+                    @if (isAuthenticated)
+                    {
+                        <div class="relative">
+                            <button type="button"
+                                    id="user-menu-button"
+                                    class="flex max-w-[14rem] items-center gap-1.5 rounded-control px-1.5 py-1 text-sm font-medium text-white transition-colors duration-150 hover:text-avocado-200"
+                                    aria-expanded="false"
+                                    aria-controls="user-menu">
+                                <span class="max-w-[12rem] truncate">@displayName</span>
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                    <path d="M4.2 6.2a.75.75 0 0 1 1.06 0L8 8.94l2.74-2.74a.75.75 0 1 1 1.06 1.06l-3.27 3.27a.75.75 0 0 1-1.06 0L4.2 7.26a.75.75 0 0 1 0-1.06z" />
+                                </svg>
+                            </button>
+
+                            <div id="user-menu"
+                                 class="absolute right-0 top-[calc(100%+0.55rem)] z-[120] w-[17.5rem] overflow-hidden rounded-card bg-white text-ink shadow-[0_12px_32px_rgba(16,22,15,0.28)] ring-1 ring-line"
+                                 hidden>
+                                <div class="flex items-center gap-2.5 border-b border-line bg-paper-alt px-4 py-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-avocado-400 text-sm font-semibold text-white" aria-hidden="true">@userInitial</span>
+                                    <div class="min-w-0">
+                                        <span class="block truncate text-sm font-semibold">@displayName</span>
+                                        <span class="block truncate text-xs text-ink-muted">@userEmail</span>
+                                    </div>
+                                </div>
+
+                                <div class="py-1.5">
+                                    <a class="flex items-center gap-2.5 px-4 py-2 text-sm transition-colors duration-150 hover:bg-avocado-100 @(isMyReviewsActive ? "font-semibold text-avocado-500" : "")" href="/Reviews/Mine">
+                                        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                            <path d="M10 2.5l2.3 4.7 5.2.7-3.8 3.6.9 5.2L10 14.3l-4.6 2.4.9-5.2-3.8-3.6 5.2-.7L10 2.5z" />
+                                        </svg>
+                                        <span>Reviews</span>
+                                    </a>
+
+                                    @* Watchlist is a planned feature. Rendered disabled with a visible
+                                       "Coming soon" label so it never reads as a working control. *@
+                                    <span class="flex cursor-not-allowed items-center gap-2.5 px-4 py-2 text-sm text-ink-faint" aria-disabled="true">
+                                        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                            <path d="M5 3.5h10a1 1 0 0 1 1 1v12l-6-3.6-6 3.6v-12a1 1 0 0 1 1-1z" />
+                                        </svg>
+                                        <span>Watchlist</span>
+                                        <span class="ml-auto rounded-[3px] bg-paper-muted px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-[0.06em] text-ink-muted">Soon</span>
+                                    </span>
+
+                                    <a class="flex items-center gap-2.5 px-4 py-2 text-sm transition-colors duration-150 hover:bg-avocado-100 @(isProfileActive ? "font-semibold text-avocado-500" : "")" href="/Account/Profile">
+                                        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                            <circle cx="10" cy="7" r="3.2" />
+                                            <path d="M4.2 16.5c.8-2.6 3-4 5.8-4s5 1.4 5.8 4" stroke-linecap="round" />
+                                        </svg>
+                                        <span>Settings</span>
+                                    </a>
+
+                                    <a class="flex items-center gap-2.5 px-4 py-2 text-sm transition-colors duration-150 hover:bg-avocado-100" asp-controller="Home" asp-action="Privacy">
+                                        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                            <circle cx="10" cy="10" r="7.2" />
+                                            <path d="M10 9.2v4.4" stroke-linecap="round" />
+                                            <circle cx="10" cy="6.6" r="0.9" fill="currentColor" stroke="none" />
+                                        </svg>
+                                        <span>About &amp; Scoring</span>
+                                    </a>
+
+                                    @if (isAdmin)
+                                    {
+                                        <div class="my-1.5 border-t border-line"></div>
+                                        <a class="flex items-center gap-2.5 px-4 py-2 text-sm transition-colors duration-150 hover:bg-avocado-100 @(isAdminActive ? "font-semibold text-avocado-500" : "")" href="/Admin">
+                                            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                                <rect x="3" y="3" width="6" height="6" rx="1" />
+                                                <rect x="11" y="3" width="6" height="4" rx="1" />
+                                                <rect x="11" y="9" width="6" height="8" rx="1" />
+                                                <rect x="3" y="11" width="6" height="6" rx="1" />
+                                            </svg>
+                                            <span>Admin Dashboard</span>
+                                        </a>
+                                        <a class="flex items-center gap-2.5 px-4 py-2 text-sm transition-colors duration-150 hover:bg-avocado-100" href="/Admin/Movies">
+                                            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                                <rect x="3" y="4" width="14" height="12" rx="1.5" />
+                                                <line x1="7" y1="4" x2="7" y2="16" />
+                                                <line x1="13" y1="4" x2="13" y2="16" />
+                                            </svg>
+                                            <span>Manage Movies</span>
+                                        </a>
+                                        <a class="flex items-center gap-2.5 px-4 py-2 text-sm transition-colors duration-150 hover:bg-avocado-100" href="/Admin/Users">
+                                            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                                <circle cx="8" cy="7.5" r="2.7" />
+                                                <path d="M3.2 16c.7-2.2 2.4-3.3 4.8-3.3s4.1 1.1 4.8 3.3" stroke-linecap="round" />
+                                                <circle cx="14.2" cy="8.2" r="2" />
+                                                <path d="M14.2 12.8c1.5.2 2.7 1 3.3 2.6" stroke-linecap="round" />
+                                            </svg>
+                                            <span>Manage Users</span>
+                                        </a>
+                                    }
+
+                                    <div class="my-1.5 border-t border-line"></div>
+                                    <form asp-controller="Account" asp-action="Logout" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm transition-colors duration-150 hover:bg-avocado-100">
+                                            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+                                                <path d="M8 17H4.5A1.5 1.5 0 0 1 3 15.5v-11A1.5 1.5 0 0 1 4.5 3H8" />
+                                                <path d="M13 6.5 16.5 10 13 13.5" />
+                                                <line x1="16" y1="10" x2="8" y2="10" />
+                                            </svg>
+                                            <span>Log Out</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <a class="text-sm font-medium uppercase text-white transition-colors duration-150 hover:text-avocado-200"
+                           asp-controller="Account" asp-action="Login">LOGIN/SIGNUP</a>
+                    }
+                </div>
+
+                <nav class="flex flex-nowrap items-center" aria-label="Main navigation">
+                    <a class="@navTabBase @(isHomeActive ? navTabActive : navTabIdle)"
+                       asp-controller="Home" asp-action="Index">HOME</a>
+
+                    <div class="group relative flex">
+                        <a class="@navTabBase @(isMoviesActive ? navTabActive : navTabIdle)"
+                           href="/Movies">MOVIES</a>
+
+                        @* Panel is flush with the tab and shares its white surface, so the two
+                           read as one shape, matching the reference. Downward-only shadow. *@
+                        <div class="invisible absolute right-0 top-full z-[130] flex min-w-[30rem] gap-9 rounded-b-card bg-white p-5 pb-6 pt-5 text-ink opacity-0 shadow-[0_8px_12px_-6px_rgba(0,0,0,0.22)] transition-all duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                            <div>
+                                <p class="mb-2.5 whitespace-nowrap text-lg font-semibold">
+                                    <a class="hover:text-avocado-500" href="/Movies">All Movies</a>
+                                </p>
+                                <ul class="flex flex-col gap-[0.45rem]">
+                                    <li><a class="block max-w-[14rem] truncate text-sm hover:text-avocado-500" href="/Movies?sort=top-rated">Top Rated</a></li>
+                                    <li><a class="block max-w-[14rem] truncate text-sm hover:text-avocado-500" href="/Movies?sort=newest">New Releases</a></li>
+                                    <li><a class="block max-w-[14rem] truncate text-sm hover:text-avocado-500" href="/Movies?sort=title">Title A&ndash;Z</a></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <p class="mb-2.5 whitespace-nowrap text-lg font-semibold">
+                                    <a class="hover:text-avocado-500" href="/Movies">Genres</a>
+                                </p>
+                                <ul class="flex flex-col gap-[0.45rem]">
+                                    <li><a class="block max-w-[14rem] truncate text-sm hover:text-avocado-500" href="/Movies?genre=Sci-Fi">Sci-Fi</a></li>
+                                    <li><a class="block max-w-[14rem] truncate text-sm hover:text-avocado-500" href="/Movies?genre=Drama">Drama</a></li>
+                                    <li><a class="block max-w-[14rem] truncate text-sm hover:text-avocado-500" href="/Movies?genre=Thriller">Thriller</a></li>
+                                    <li><a class="block max-w-[14rem] truncate text-sm hover:text-avocado-500" href="/Movies?genre=Mystery">Mystery</a></li>
+                                    <li><a class="block max-w-[14rem] truncate text-sm hover:text-avocado-500" href="/Movies?genre=Animation">Animation</a></li>
+                                </ul>
+                            </div>
+                            <div class="min-w-[12rem]">
+                                <p class="mb-2.5 whitespace-nowrap text-lg font-semibold">More</p>
+                                <ul class="flex flex-col gap-[0.45rem]">
+                                    <li><a class="block max-w-[14rem] truncate text-sm hover:text-avocado-500" href="/Movies">Browse Catalog</a></li>
+                                    @if (isAuthenticated)
+                                    {
+                                        <li><a class="block max-w-[14rem] truncate text-sm hover:text-avocado-500" href="/Reviews/Mine">My Reviews</a></li>
+                                    }
+                                    else
+                                    {
+                                        <li><a class="block max-w-[14rem] truncate text-sm hover:text-avocado-500" href="/Account/Login">Sign In to Review</a></li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+        @* Browse strip. Hidden on mobile, where the drawer carries these links. *@
+        <div class="hidden border-t border-white/[0.08] bg-avocado-600 lg:block">
+            <div class="flex w-full items-center gap-2 px-2.5 py-1">
+                <span class="shrink-0 pr-1.5 font-display text-base font-medium uppercase leading-[18px] tracking-[0.055em] text-gold-500">BROWSE</span>
+                <nav class="flex min-w-0 items-center overflow-x-auto [scrollbar-width:none]" aria-label="Browse links">
+                    <a class="mr-0.5 whitespace-nowrap px-1.5 text-sm leading-[18px] text-[#E8ECDF] transition-colors duration-150 hover:text-gold-500" href="/Movies">All Movies</a>
+                    <a class="mr-0.5 whitespace-nowrap px-1.5 text-sm leading-[18px] text-[#E8ECDF] transition-colors duration-150 hover:text-gold-500" href="/Movies?sort=top-rated">Top Rated</a>
+                    <a class="mr-0.5 whitespace-nowrap px-1.5 text-sm leading-[18px] text-[#E8ECDF] transition-colors duration-150 hover:text-gold-500" href="/Movies?sort=newest">New Releases</a>
+                    <a class="mr-0.5 whitespace-nowrap px-1.5 text-sm leading-[18px] transition-colors duration-150 hover:text-gold-500 @(isMoviesActive && string.Equals(currentGenre, "Sci-Fi", StringComparison.OrdinalIgnoreCase) ? "text-gold-500" : "text-[#E8ECDF]")" href="/Movies?genre=Sci-Fi">Sci-Fi</a>
+                    <a class="mr-0.5 whitespace-nowrap px-1.5 text-sm leading-[18px] transition-colors duration-150 hover:text-gold-500 @(isMoviesActive && string.Equals(currentGenre, "Drama", StringComparison.OrdinalIgnoreCase) ? "text-gold-500" : "text-[#E8ECDF]")" href="/Movies?genre=Drama">Drama</a>
+                    <a class="mr-0.5 whitespace-nowrap px-1.5 text-sm leading-[18px] transition-colors duration-150 hover:text-gold-500 @(isMoviesActive && string.Equals(currentGenre, "Thriller", StringComparison.OrdinalIgnoreCase) ? "text-gold-500" : "text-[#E8ECDF]")" href="/Movies?genre=Thriller">Thriller</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <div id="mobile-nav-backdrop" class="fixed inset-0 z-[140] bg-black/55" hidden></div>
+    <aside id="mobile-nav-drawer"
+           class="fixed inset-y-0 left-0 z-[150] flex w-[86%] max-w-sm flex-col bg-white text-ink shadow-2xl"
+           role="dialog" aria-modal="true" aria-label="Navigation menu" hidden>
+        <div class="flex items-center justify-between border-b border-line px-4 py-3">
+            <a class="flex items-center" asp-controller="Home" asp-action="Index" aria-label="Pure Avocadoes home">
+                <svg width="34" height="34" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                    <path d="M16 3C11.2 3 7 10.6 7 18.2C7 24.4 10.9 29 16 29C21.1 29 25 24.4 25 18.2C25 10.6 20.8 3 16 3Z" fill="#718D43" stroke="#1F3D2A" stroke-width="1.5" />
+                    <circle cx="16" cy="19.5" r="4.8" fill="#D6AC55" stroke="#1F3D2A" stroke-width="1.5" />
+                </svg>
+            </a>
+            <button type="button" id="mobile-nav-close"
+                    class="flex h-10 w-10 items-center justify-center rounded-control text-ink transition-colors duration-150 hover:bg-paper-muted"
+                    aria-label="Close navigation menu">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                    <line x1="5" y1="5" x2="19" y2="19" />
+                    <line x1="19" y1="5" x2="5" y2="19" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-4 py-2">
+            <details class="border-b border-line py-2" open>
+                <summary class="flex cursor-pointer list-none items-center justify-between py-1.5 text-lg font-semibold">
+                    <span>Home</span>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.8 5.8 8 10l4.2-4.2a.75.75 0 0 1 1.06 1.06l-4.73 4.73a.75.75 0 0 1-1.06 0L2.74 6.86A.75.75 0 0 1 3.8 5.8z" /></svg>
+                </summary>
+                <div class="flex flex-col gap-3 pb-1 pt-2.5">
+                    <a class="text-base @(isHomeActive ? "font-semibold text-avocado-500" : "text-ink")" asp-controller="Home" asp-action="Index">Home Page</a>
+                    <a class="text-base @(isPrivacyActive ? "font-semibold text-avocado-500" : "text-ink")" asp-controller="Home" asp-action="Privacy">About &amp; Avocado Score</a>
+                </div>
+            </details>
+
+            <details class="border-b border-line py-2" open>
+                <summary class="flex cursor-pointer list-none items-center justify-between py-1.5 text-lg font-semibold">
+                    <span>Movies</span>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.8 5.8 8 10l4.2-4.2a.75.75 0 0 1 1.06 1.06l-4.73 4.73a.75.75 0 0 1-1.06 0L2.74 6.86A.75.75 0 0 1 3.8 5.8z" /></svg>
+                </summary>
+                <div class="flex flex-col gap-3 pb-1 pt-2.5">
+                    <a class="text-base" href="/Movies">All Movies</a>
+                    <a class="text-base" href="/Movies?sort=top-rated">Top Rated</a>
+                    <a class="text-base" href="/Movies?sort=newest">New Releases</a>
+                    <a class="text-base" href="/Movies?sort=title">Title A&ndash;Z</a>
+                </div>
+            </details>
+
+            <details class="border-b border-line py-2" open>
+                <summary class="flex cursor-pointer list-none items-center justify-between py-1.5 text-lg font-semibold">
+                    <span>Genres</span>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.8 5.8 8 10l4.2-4.2a.75.75 0 0 1 1.06 1.06l-4.73 4.73a.75.75 0 0 1-1.06 0L2.74 6.86A.75.75 0 0 1 3.8 5.8z" /></svg>
+                </summary>
+                <div class="flex flex-col gap-3 pb-1 pt-2.5">
+                    <a class="text-base" href="/Movies?genre=Sci-Fi">Sci-Fi</a>
+                    <a class="text-base" href="/Movies?genre=Drama">Drama</a>
+                    <a class="text-base" href="/Movies?genre=Thriller">Thriller</a>
+                    <a class="text-base" href="/Movies?genre=Mystery">Mystery</a>
+                    <a class="text-base" href="/Movies?genre=Animation">Animation</a>
+                </div>
+            </details>
+
+            @if (isAuthenticated)
+            {
+                <details class="py-2" open>
+                    <summary class="flex cursor-pointer list-none items-center justify-between py-1.5 text-lg font-semibold">
+                        <span>Account</span>
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.8 5.8 8 10l4.2-4.2a.75.75 0 0 1 1.06 1.06l-4.73 4.73a.75.75 0 0 1-1.06 0L2.74 6.86A.75.75 0 0 1 3.8 5.8z" /></svg>
+                    </summary>
+                    <div class="flex flex-col gap-3 pb-1 pt-2.5">
+                        <a class="text-base @(isMyReviewsActive ? "font-semibold text-avocado-500" : "text-ink")" href="/Reviews/Mine">My Reviews</a>
+                        <a class="text-base @(isProfileActive ? "font-semibold text-avocado-500" : "text-ink")" href="/Account/Profile">Settings</a>
+                        @if (isAdmin)
+                        {
+                            <a class="text-base" href="/Admin">Admin Dashboard</a>
+                            <a class="text-base" href="/Admin/Movies">Manage Movies</a>
+                            <a class="text-base" href="/Admin/Users">Manage Users</a>
+                        }
+                    </div>
+                </details>
+            }
+        </div>
+
+        <div class="border-t border-line px-4 py-4">
+            @if (isAuthenticated)
+            {
+                <div class="mb-3 flex items-center gap-2.5">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-full bg-avocado-400 text-sm font-semibold text-white" aria-hidden="true">@userInitial</span>
+                    <span class="text-sm font-semibold">@displayName</span>
+                    <a class="ml-auto flex h-9 w-9 items-center justify-center rounded-control text-ink-muted hover:bg-paper-muted" href="/Account/Profile" aria-label="Account settings">
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                            <circle cx="10" cy="7" r="3.2" />
+                            <path d="M4.2 16.5c.8-2.6 3-4 5.8-4s5 1.4 5.8 4" stroke-linecap="round" />
+                        </svg>
+                    </a>
+                </div>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-block bg-cinema text-white hover:bg-black">LOGOUT</button>
+                </form>
+            }
+            else
+            {
+                <p class="mb-3 text-base text-ink-muted">
+                    Create a free account to rate movies with avocados and write your own reviews.
+                </p>
+                <div class="flex gap-2">
+                    <a class="btn flex-1 bg-cinema text-white hover:bg-black" asp-controller="Account" asp-action="Login">LOGIN</a>
+                    <a class="btn flex-1 border border-line-strong bg-white text-ink hover:bg-paper-muted" asp-controller="Account" asp-action="Register">SIGN UP</a>
+                </div>
+            }
+        </div>
+    </aside>
+
+    <main id="main-content">
+        @if ((TempData["StatusMessage"] is string statusMsg && !string.IsNullOrWhiteSpace(statusMsg))
+            || (TempData["ErrorMessage"] is string errorMsg && !string.IsNullOrWhiteSpace(errorMsg)))
+        {
+            <div class="container-page pt-4">
+                @if (TempData["StatusMessage"] is string statusMessage && !string.IsNullOrWhiteSpace(statusMessage))
+                {
+                    <div class="alert alert-success" role="status">
+                        <span>@statusMessage</span>
+                        <button type="button" class="shrink-0 text-lg leading-none" data-dismiss-alert aria-label="Dismiss message">&times;</button>
+                    </div>
+                }
+
+                @if (TempData["ErrorMessage"] is string errorMessage && !string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <span>@errorMessage</span>
+                        <button type="button" class="shrink-0 text-lg leading-none" data-dismiss-alert aria-label="Dismiss message">&times;</button>
+                    </div>
+                }
+            </div>
+        }
+
+        @await RenderSectionAsync("FullBleedTop", required: false)
+
+        @if (ViewData["FullBleedMain"] is true)
+        {
+            @* Page supplies its own full-width surfaces, so the shared container
+               and its padding would only get in the way. *@
+            @RenderBody()
+        }
+        else
+        {
+            <div class="container-page pb-14 pt-6 md:pb-16 md:pt-8">
+                @RenderBody()
+            </div>
+        }
+    </main>
+
+    @* Footer sits flush against the page: no gap band, no separating bar.
+       Desktop carries three columns; below `lg` the Browse group is dropped so
+       small screens only show Account and About. *@
+    <footer class="bg-footer text-[#D8DFD2]">
+        <div class="container-page pb-7 pt-10 md:pt-12">
+            <div class="grid grid-cols-2 gap-8 border-b border-white/[0.12] pb-8 lg:grid-cols-3">
+                <div class="hidden lg:block">
+                    <p class="mb-3 font-display text-lg font-medium uppercase tracking-[0.055em] text-white">Browse</p>
+                    <nav class="flex flex-col gap-2.5" aria-label="Footer browse links">
+                        <a class="text-base text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" asp-controller="Home" asp-action="Index">Home</a>
+                        <a class="text-base text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" href="/Movies">All Movies</a>
+                        <a class="text-base text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" href="/Movies?sort=top-rated">Top Rated</a>
+                        <a class="text-base text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" href="/Movies?sort=newest">New Releases</a>
+                    </nav>
+                </div>
+
+                <div>
+                    <p class="mb-3 font-display text-lg font-medium uppercase tracking-[0.055em] text-white">Account</p>
+                    <nav class="flex flex-col gap-2.5" aria-label="Footer account links">
+                        @if (isAuthenticated)
+                        {
+                            <a class="text-base text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" href="/Account/Profile">My Profile</a>
+                            <a class="text-base text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" href="/Reviews/Mine">My Reviews</a>
+                            @if (isAdmin)
+                            {
+                                <a class="text-base text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" href="/Admin">Admin Dashboard</a>
+                            }
+                        }
+                        else
+                        {
+                            <a class="text-base text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" asp-controller="Account" asp-action="Login">Log In</a>
+                            <a class="text-base text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" asp-controller="Account" asp-action="Register">Create Account</a>
+                        }
+                    </nav>
+                </div>
+
+                <div>
+                    <p class="mb-3 font-display text-lg font-medium uppercase tracking-[0.055em] text-white">About</p>
+                    <nav class="flex flex-col gap-2.5" aria-label="Footer about links">
+                        <a class="text-base text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" asp-controller="Home" asp-action="Privacy">About Pure Avocadoes</a>
+                        <a class="text-base text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" asp-controller="Home" asp-action="Privacy">How the Avocado Score Works</a>
+                    </nav>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-sm text-[#9AA898]">&copy; 2026 Pure Avocadoes: Movie Hub Platform</p>
+                <a class="text-sm text-[#C4CEBD] transition-colors duration-150 hover:text-avocado-200" asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
