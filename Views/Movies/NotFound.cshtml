@@ -1,0 +1,14 @@
+@{
+    ViewData["Title"] = "Movie Not Found";
+}
+
+<section aria-labelledby="movie-not-found-heading">
+    <div class="empty-state">
+        <h1 id="movie-not-found-heading" class="mb-2 text-lg font-semibold">Movie not found</h1>
+        <p>The movie you requested does not exist or may have been removed from the catalog.</p>
+        <div class="flex flex-wrap justify-center gap-2">
+            <a class="btn btn-primary" asp-controller="Movies" asp-action="Index">Browse Movie Catalog</a>
+            <a class="btn btn-secondary" asp-controller="Home" asp-action="Index">Back to Home</a>
+        </div>
+    </div>
+</section>

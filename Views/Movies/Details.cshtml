@@ -1,0 +1,382 @@
+@using PureAvocadoes.ViewModels
+@model MovieDetailsViewModel
+@{
+    var movie = Model.Movie;
+    ViewData["Title"] = Model.HasDatabaseError ? "Movie Unavailable" : movie.Title;
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var returnUrl = $"/Movies/Details/{movie.MovieId}";
+    var backdrop = PureAvocadoes.ViewModels.MovieCardViewModel.SanitizePosterUrl(movie.PosterUrl);
+    var durationLabel = movie.DurationMinutes > 0
+        ? $"{movie.DurationMinutes / 60}h {movie.DurationMinutes % 60}m".Trim()
+        : null;
+
+    // The hero is full-bleed and sticky, and the content below it is its own
+    // sheet that slides over the hero, so the shared page container is skipped.
+    ViewData["FullBleedMain"] = true;
+}
+
+@section FullBleedTop {
+    @if (!Model.HasDatabaseError)
+    {
+        @* Condensed bar the hero title morphs into. The surface, the title slot
+           and the chrome are separate layers so scroll progress can fade each in
+           independently while the title itself travels between the two positions. *@
+        <div class="sticky-movie-bar"
+             data-sticky-movie-bar
+             data-visible="false"
+             aria-hidden="true">
+            <div class="sticky-movie-bar__surface" aria-hidden="true"></div>
+
+            <div class="container-page relative flex h-full items-center justify-between gap-3 sm:gap-4">
+                <div class="flex min-w-0 flex-1 items-center gap-3">
+                    @* Reserves the slot the morphing title lands in; the text is
+                       only here so the bar keeps its width, it is never painted. *@
+                    <span class="invisible min-w-0 truncate text-[0.95rem] font-semibold" data-morph-target>@movie.Title</span>
+
+                    <span class="sticky-movie-bar__chrome hidden shrink-0 items-center gap-3 sm:flex">
+                        <span class="text-xs tabular-nums text-avocado-200">@movie.ReleaseYear</span>
+                        <span class="flex shrink-0 items-center gap-1 text-xs font-semibold tabular-nums text-white">
+                            <svg width="14" height="14" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                                <path d="M16 3C11.2 3 7 10.6 7 18.2C7 24.4 10.9 29 16 29C21.1 29 25 24.4 25 18.2C25 10.6 20.8 3 16 3Z" fill="#718D43" />
+                                <circle cx="16" cy="19.5" r="4.8" fill="#D6AC55" />
+                            </svg>
+                            @if (movie.HasReviews)
+                            {
+                                <span>@movie.FormattedScore/5</span>
+                            }
+                            else
+                            {
+                                <span class="text-avocado-200">Not Yet Rated</span>
+                            }
+                        </span>
+                    </span>
+                </div>
+
+                <div class="sticky-movie-bar__chrome flex shrink-0 items-center gap-2">
+                    @if (!isAuthenticated)
+                    {
+                        <a class="btn btn-sm btn-gold" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@returnUrl">Sign In<span class="max-sm:hidden"> to Review</span></a>
+                    }
+                    else if (Model.CurrentUserReview is not null)
+                    {
+                        <a class="btn btn-sm btn-gold" href="#reviews">Your Review</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-sm btn-gold" href="#reviews">Rate<span class="max-sm:hidden"> &amp; Review</span></a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* The heading that shrinks. It starts exactly over the hero title and is
+           moved/scaled into the bar slot by JS, so the same text appears to shrink
+           and settle into the header rather than two titles swapping. *@
+        <h1 class="morph-title font-sans text-3xl sm:text-4xl lg:text-5xl" data-morph-title aria-hidden="true">@movie.Title</h1>
+
+        @* Tall pinned hero. It stays put while the card below scrolls up over it,
+           which is what makes the details section read as covering the hero. *@
+        <section class="details-hero bg-cinema" data-details-hero aria-labelledby="movie-details-title">
+            @if (!string.IsNullOrEmpty(backdrop))
+            {
+                <img class="absolute inset-0 h-full w-full object-cover object-top" src="@backdrop" alt="" fetchpriority="high" width="1600" height="900" />
+            }
+            <div class="absolute inset-0 bg-gradient-to-r from-cinema via-cinema/80 to-cinema/30" aria-hidden="true"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-cinema via-transparent to-transparent" aria-hidden="true"></div>
+
+            <div class="container-page relative flex h-full flex-col justify-center pb-16 pt-10 md:pb-20">
+                <div class="flex max-w-3xl flex-col gap-3">
+                    @* Real heading, kept for semantics and to reserve the layout
+                       space. It is transparent because the morphing copy above is
+                       the one the user actually sees move. *@
+                    <h1 id="movie-details-title" class="invisible text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl" data-hero-title-anchor>@movie.Title</h1>
+
+                    <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[#D5DCCB]" data-hero-meta>
+                        @if (!string.IsNullOrWhiteSpace(movie.Genre))
+                        {
+                            <span>@movie.Genre</span>
+                            <span aria-hidden="true">&middot;</span>
+                        }
+                        <span class="tabular-nums">@movie.ReleaseYear</span>
+                        @if (!string.IsNullOrEmpty(durationLabel))
+                        {
+                            <span aria-hidden="true">&middot;</span>
+                            <span class="tabular-nums">@durationLabel</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(movie.Director))
+                        {
+                            <span aria-hidden="true">&middot;</span>
+                            <span>Directed by @movie.Director</span>
+                        }
+                    </p>
+
+                    @* Action row. The review CTA is real. Watchlist is a planned core
+                       feature, so it ships visibly disabled and labelled as such. *@
+                    <div class="mt-2 flex flex-wrap items-center gap-3" data-hero-meta>
+                        @if (!isAuthenticated)
+                        {
+                            <a class="btn btn-gold" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@returnUrl">
+                                <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path d="M10 1.8l2.5 5.1 5.6.8-4 4 .9 5.6L10 14.6l-5 2.7.9-5.6-4-4 5.6-.8L10 1.8z" />
+                                </svg>
+                                Sign In to Review
+                            </a>
+                        }
+                        else if (Model.CurrentUserReview is not null)
+                        {
+                            <a class="btn btn-gold" href="#reviews">View Your Review</a>
+                        }
+                        else
+                        {
+                            <a class="btn btn-gold" href="#add-review">Rate This Movie</a>
+                        }
+
+                        <button type="button"
+                                class="btn btn-outline-invert cursor-not-allowed opacity-80"
+                                disabled
+                                aria-label="Add @movie.Title to your watchlist. Coming soon">
+                            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <path d="M5 3.5h10a1 1 0 0 1 1 1v12l-6-3.6-6 3.6v-12a1 1 0 0 1 1-1z" />
+                            </svg>
+                            Watchlist
+                            <span class="rounded-[3px] bg-white/20 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-[0.06em]">Soon</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    }
+}
+
+@if (Model.HasDatabaseError)
+{
+    <section class="container-page py-8" aria-labelledby="movie-error-heading">
+        <div class="alert alert-danger" role="alert">
+            <span><strong>Error:</strong> @(Model.ErrorMessage ?? "Unable to load movie details right now.")</span>
+        </div>
+        <div class="empty-state">
+            <h1 id="movie-error-heading" class="mb-2 text-lg font-semibold">Movie details are temporarily unavailable</h1>
+            <p>Check your database connection and try loading this film again.</p>
+            <div class="flex flex-wrap justify-center gap-2">
+                <a class="btn btn-primary" asp-controller="Movies" asp-action="Details" asp-route-id="@movie.MovieId">Retry</a>
+                <a class="btn btn-secondary" asp-controller="Movies" asp-action="Index">Browse Catalog</a>
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    @* The sheet that slides up over the hero. Its rounded top edge and upward
+       shadow are what sell it as a separate card being dealt on top. *@
+    <div class="details-panel" data-details-panel>
+        <div class="container-page pb-14 pt-6 md:pb-16 md:pt-8">
+            <nav class="mb-6 flex items-center gap-2 overflow-x-auto border-b border-line pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-tab-rail aria-label="Movie page sections">
+                <a class="chip shrink-0 whitespace-nowrap normal-case" data-tab-pill href="#reviews">Reviews</a>
+                <a class="chip shrink-0 whitespace-nowrap normal-case" data-tab-pill href="#movie-info">Movie Info</a>
+            </nav>
+
+            <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_21rem]">
+        <div class="flex min-w-0 flex-col gap-6">
+            <section id="reviews" class="scroll-mt-20" aria-labelledby="reviews-heading">
+                <div class="card">
+                    <div class="mb-4 flex items-baseline justify-between gap-3">
+                        <h2 id="reviews-heading" class="section-title">Audience Reviews</h2>
+                        <span class="text-xs font-semibold tabular-nums text-ink-muted">@movie.ReviewCountLabel</span>
+                    </div>
+
+                    @if (Model.Reviews.Count == 0)
+                    {
+                        <div class="rounded-card border border-dashed border-line-strong px-6 py-10 text-center">
+                            <h3 class="mb-1.5 text-base font-semibold">No audience reviews yet</h3>
+                            <p class="text-sm text-ink-muted">No viewer has published a review for @movie.Title yet.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            @foreach (var review in Model.Reviews)
+                            {
+                                <article class="rounded-card border border-line bg-paper-alt p-4">
+                                    <div class="mb-2 flex flex-wrap items-start justify-between gap-3">
+                                        <div class="flex min-w-0 items-center gap-2.5">
+                                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-avocado-400 text-sm font-semibold text-white" aria-hidden="true">@review.ReviewerInitial</span>
+                                            <div class="min-w-0">
+                                                <h3 class="truncate text-sm font-semibold">@review.ReviewerName</h3>
+                                                <p class="text-xs text-ink-muted">
+                                                    @(review.IsEdited ? $"Updated {review.FormattedDate}" : review.FormattedDate)
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex shrink-0 items-center gap-0.5" aria-label="Rated @review.Rating out of 5">
+                                            @for (var star = 1; star <= 5; star++)
+                                            {
+                                                var filled = star <= review.Rating;
+                                                <svg class="@(filled ? "text-gold-500" : "text-line-strong")" width="15" height="15" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path d="M10 1.8l2.5 5.1 5.6.8-4 4 .9 5.6L10 14.6l-5 2.7.9-5.6-4-4 5.6-.8L10 1.8z" />
+                                                </svg>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <p class="text-sm leading-relaxed text-ink">@review.ReviewText</p>
+
+                                    @if (review.IsOwnedByCurrentUser)
+                                    {
+                                        <div class="mt-3 flex gap-2">
+                                            <a class="btn btn-sm btn-secondary" asp-controller="Reviews" asp-action="Edit" asp-route-id="@review.ReviewId">Edit</a>
+                                            <a class="btn btn-sm btn-danger-outline" asp-controller="Reviews" asp-action="Delete" asp-route-id="@review.ReviewId">Delete</a>
+                                        </div>
+                                    }
+                                </article>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div id="add-review" class="card mt-5 scroll-mt-20">
+                    <div class="mb-3">
+                        <p class="kicker">@movie.Title</p>
+                        <h2 class="text-lg font-semibold">My Rating</h2>
+                    </div>
+
+                    @if (!isAuthenticated)
+                    {
+                        <p class="mb-4 text-sm text-ink-muted">
+                            Sign in or create an account to rate <strong class="text-ink">@movie.Title</strong> from 1 to 5 and publish your review. You will return directly to this movie after signing in.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <a class="btn btn-primary" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@returnUrl">Sign In to Review</a>
+                            <a class="btn btn-secondary" asp-controller="Account" asp-action="Register" asp-route-returnUrl="@returnUrl">Create Account to Review</a>
+                        </div>
+                    }
+                    else if (Model.CurrentUserReview is not null)
+                    {
+                        var own = Model.CurrentUserReview;
+                        <p class="mb-3 text-sm text-ink-muted">
+                            You have already submitted your review for <strong class="text-ink">@movie.Title</strong> (one review per user per movie).
+                        </p>
+                        <div class="rounded-card border border-line bg-paper-alt p-4">
+                            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center gap-0.5" aria-label="Rated @own.Rating out of 5">
+                                    @for (var star = 1; star <= 5; star++)
+                                    {
+                                        var filled = star <= own.Rating;
+                                        <svg class="@(filled ? "text-gold-500" : "text-line-strong")" width="15" height="15" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path d="M10 1.8l2.5 5.1 5.6.8-4 4 .9 5.6L10 14.6l-5 2.7.9-5.6-4-4 5.6-.8L10 1.8z" />
+                                        </svg>
+                                    }
+                                </div>
+                                <span class="text-xs text-ink-muted">@(own.IsEdited ? $"Updated {own.FormattedDate}" : own.FormattedDate)</span>
+                            </div>
+                            <p class="text-sm text-ink">@own.ReviewText</p>
+                            <div class="mt-3 flex gap-2">
+                                <a class="btn btn-sm btn-secondary" asp-controller="Reviews" asp-action="Edit" asp-route-id="@own.ReviewId">Edit Review</a>
+                                <a class="btn btn-sm btn-danger-outline" asp-controller="Reviews" asp-action="Delete" asp-route-id="@own.ReviewId">Delete Review</a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        var createFormModel = new ReviewFormViewModel
+                        {
+                            MovieId = movie.MovieId,
+                            MovieTitle = movie.Title,
+                            Rating = ViewData["ReviewRatingDraft"] as int?,
+                            ReviewText = ViewData["ReviewTextDraft"] as string ?? string.Empty
+                        };
+
+                        <p class="mb-3 text-sm font-semibold">What Did You Think Of It?</p>
+
+                        <form asp-controller="Reviews" asp-action="Create" method="post" novalidate>
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="MovieId" value="@movie.MovieId" />
+
+                            <partial name="_ReviewFormFields" model="createFormModel" />
+
+                            <button type="submit" class="btn btn-primary">Post Rating</button>
+                        </form>
+                    }
+                </div>
+            </section>
+
+            <section id="movie-info" class="card scroll-mt-20" aria-labelledby="movie-info-heading">
+                <h2 id="movie-info-heading" class="section-title mb-4">Movie Info</h2>
+                <dl class="divide-y divide-line">
+                    <div class="grid grid-cols-1 gap-1 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
+                        <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Synopsis</dt>
+                        <dd class="text-sm text-ink">@movie.Synopsis</dd>
+                    </div>
+                    <div class="grid grid-cols-1 gap-1 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
+                        <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Director</dt>
+                        <dd class="text-sm text-ink">@(!string.IsNullOrWhiteSpace(movie.Director) ? movie.Director : "Not specified")</dd>
+                    </div>
+                    <div class="grid grid-cols-1 gap-1 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
+                        <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Genre</dt>
+                        <dd class="text-sm text-ink">@movie.Genre</dd>
+                    </div>
+                    <div class="grid grid-cols-1 gap-1 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
+                        <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Release Year</dt>
+                        <dd class="text-sm tabular-nums text-ink">@movie.ReleaseYear</dd>
+                    </div>
+                    <div class="grid grid-cols-1 gap-1 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
+                        <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Duration</dt>
+                        <dd class="text-sm tabular-nums text-ink">@(movie.DurationMinutes > 0 ? $"{movie.DurationMinutes} min" : "Not specified")</dd>
+                    </div>
+                </dl>
+            </section>
+        </div>
+
+        <aside class="lg:sticky lg:top-[4.5rem]" aria-label="Top rated movies sidebar">
+            <div class="rounded-card border border-line bg-white p-4">
+                <h2 class="mb-3 text-base font-semibold">Top Rated</h2>
+
+                <div class="mb-2 flex items-baseline justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-[0.04em]">Most Popular</span>
+                    <a class="text-xs font-semibold uppercase tracking-[0.04em] text-avocado-500 hover:text-avocado-900"
+                       asp-controller="Movies" asp-action="Index" asp-route-sort="top-rated">View all</a>
+                </div>
+
+                @if (Model.TopRatedSidebarMovies.Count > 0)
+                {
+                    <ol class="flex flex-col">
+                        @{
+                            var rank = 1;
+                        }
+                        @foreach (var ranked in Model.TopRatedSidebarMovies)
+                        {
+                            <li>
+                                <a class="flex items-center gap-3 rounded-control py-2 transition-colors duration-150 hover:bg-paper-alt" asp-controller="Movies" asp-action="Details" asp-route-id="@ranked.MovieId">
+                                    <span class="w-4 shrink-0 text-center text-xs font-semibold tabular-nums text-ink-faint" aria-hidden="true">@rank</span>
+                                    <span class="block w-8 shrink-0 overflow-hidden rounded-[3px]">
+                                        <partial name="_MoviePoster" model="ranked" />
+                                    </span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block truncate text-sm font-medium">@ranked.Title</span>
+                                        <span class="flex items-center gap-1 text-xs font-semibold tabular-nums text-ink-muted">
+                                            <svg width="12" height="12" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                                                <path d="M16 3C11.2 3 7 10.6 7 18.2C7 24.4 10.9 29 16 29C21.1 29 25 24.4 25 18.2C25 10.6 20.8 3 16 3Z" fill="#718D43" />
+                                                <circle cx="16" cy="19.5" r="4.8" fill="#D6AC55" />
+                                            </svg>
+                                            @(ranked.HasReviews ? $"{ranked.FormattedScore}/5" : "--")
+                                        </span>
+                                    </span>
+                                </a>
+                            </li>
+                            rank++;
+                        }
+                    </ol>
+                }
+                else
+                {
+                    <div class="py-3 text-center">
+                        <p class="mb-3 text-sm text-ink-muted">No other rated movies in the catalog yet.</p>
+                        <a class="btn btn-sm btn-secondary" asp-controller="Movies" asp-action="Index">Browse Movies</a>
+                    </div>
+                }
+            </div>
+        </aside>
+            </div>
+        </div>
+    </div>
+}
