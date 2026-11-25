@@ -1,0 +1,137 @@
+@model PureAvocadoes.ViewModels.MovieListViewModel
+@{
+    ViewData["Title"] = "Movies";
+}
+
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <h1 class="font-display text-[1.75rem] font-medium uppercase tracking-[0.03em]">Best Movies in the Catalog</h1>
+    @if (!Model.HasDatabaseError && Model.TotalCatalogCount > 0)
+    {
+        <span class="rounded-full bg-paper-muted px-3 py-1 text-xs font-semibold tabular-nums text-ink-muted">
+            Showing @Model.Movies.Count of @Model.TotalCatalogCount @(Model.TotalCatalogCount == 1 ? "movie" : "movies")
+        </span>
+    }
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.FilterWarning))
+{
+    <div class="alert alert-warning" role="status">
+        <span><strong>Warning:</strong> @Model.FilterWarning</span>
+        <button type="button" class="shrink-0 text-lg leading-none" data-dismiss-alert aria-label="Dismiss warning">&times;</button>
+    </div>
+}
+
+<section class="mb-6 border-y border-line py-3" aria-label="Sort, filter, and search catalog">
+    <form method="get" asp-controller="Movies" asp-action="Index" role="search">
+        <div class="flex flex-wrap items-center gap-2">
+            <div class="relative">
+                <label class="sr-only" for="catalog-sort">Sort movies</label>
+                <select id="catalog-sort" name="sort"
+                        class="chip appearance-none pr-8"
+                        data-auto-submit aria-label="Sort movies">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.Sort))">Sort: Most Recent</option>
+                    <option value="top-rated" selected="@(Model.Sort == "top-rated")">Avocado Score</option>
+                    <option value="newest" selected="@(Model.Sort == "newest")">Newest</option>
+                    <option value="release-year" selected="@(Model.Sort == "release-year")">Release Year</option>
+                    <option value="title" selected="@(Model.Sort == "title")">Title A–Z</option>
+                </select>
+                <svg class="pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.8 5.8 8 10l4.2-4.2a.75.75 0 0 1 1.06 1.06l-4.73 4.73a.75.75 0 0 1-1.06 0L2.74 6.86A.75.75 0 0 1 3.8 5.8z" /></svg>
+            </div>
+
+            <div class="relative">
+                <label class="sr-only" for="catalog-genre">Filter by genre</label>
+                <select id="catalog-genre" name="genre"
+                        class="chip appearance-none pr-8"
+                        data-auto-submit aria-label="Filter by genre">
+                    <option value="">Genre</option>
+                    @foreach (var genreOption in Model.AvailableGenres)
+                    {
+                        var isSelected = string.Equals(Model.Genre, genreOption, StringComparison.OrdinalIgnoreCase);
+                        <option value="@genreOption" selected="@isSelected">@genreOption</option>
+                    }
+                </select>
+                <svg class="pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.8 5.8 8 10l4.2-4.2a.75.75 0 0 1 1.06 1.06l-4.73 4.73a.75.75 0 0 1-1.06 0L2.74 6.86A.75.75 0 0 1 3.8 5.8z" /></svg>
+            </div>
+
+            <div class="relative">
+                <label class="sr-only" for="catalog-year">Filter by release year</label>
+                <select id="catalog-year" name="releaseYear"
+                        class="chip appearance-none pr-8"
+                        data-auto-submit aria-label="Filter by release year">
+                    <option value="">Year</option>
+                    @foreach (var yearOption in Model.AvailableReleaseYears)
+                    {
+                        var isSelected = Model.ReleaseYear == yearOption;
+                        <option value="@yearOption" selected="@isSelected">@yearOption</option>
+                    }
+                </select>
+                <svg class="pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.8 5.8 8 10l4.2-4.2a.75.75 0 0 1 1.06 1.06l-4.73 4.73a.75.75 0 0 1-1.06 0L2.74 6.86A.75.75 0 0 1 3.8 5.8z" /></svg>
+            </div>
+
+            <div class="relative min-w-[11rem] flex-1 sm:max-w-xs">
+                <label class="sr-only" for="catalog-search">Search by title</label>
+                <input id="catalog-search"
+                       name="search"
+                       type="search"
+                       class="chip w-full normal-case tracking-normal placeholder:font-normal placeholder:normal-case"
+                       value="@Model.Search"
+                       placeholder="Search title..." />
+            </div>
+
+            <noscript>
+                <button type="submit" class="chip">Apply</button>
+            </noscript>
+
+            @if (Model.HasActiveFilters)
+            {
+                <a class="text-xs font-semibold uppercase tracking-[0.04em] text-avocado-500 underline-offset-2 hover:underline"
+                   asp-controller="Movies" asp-action="Index">Reset Filters</a>
+            }
+        </div>
+    </form>
+</section>
+
+@if (Model.HasDatabaseError)
+{
+    <section aria-label="Catalog error">
+        <div class="alert alert-danger" role="alert">
+            <span><strong>Error:</strong> @(Model.ErrorMessage ?? "Unable to load movies from the database right now.")</span>
+        </div>
+        <div class="empty-state">
+            <h2>Movie catalog is temporarily unavailable</h2>
+            <p>Check your database connection and try again to browse movies.</p>
+            <a class="btn btn-primary" asp-controller="Movies" asp-action="Index">Retry Loading Movies</a>
+        </div>
+    </section>
+}
+else if (Model.TotalCatalogCount == 0)
+{
+    <section aria-label="Empty catalog">
+        <div class="empty-state">
+            <h2>No movies are in the catalog yet</h2>
+            <p>Movies added by administrators or database seeding will appear here for browsing and audience reviews.</p>
+            <a class="btn btn-secondary" asp-controller="Home" asp-action="Index">Back to Home</a>
+        </div>
+    </section>
+}
+else if (Model.Movies.Count == 0)
+{
+    <section aria-label="No matching movies">
+        <div class="empty-state">
+            <h2>No movies match these filters</h2>
+            <p>Try a broader title keyword, choose another genre or release year, or reset all filters to view the full catalog.</p>
+            <a class="btn btn-primary" asp-controller="Movies" asp-action="Index">Reset Filters</a>
+        </div>
+    </section>
+}
+else
+{
+    <section aria-label="Movie results">
+        <div class="grid grid-cols-2 items-stretch gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            @foreach (var movie in Model.Movies)
+            {
+                <partial name="_MovieCard" model="movie" />
+            }
+        </div>
+    </section>
+}
