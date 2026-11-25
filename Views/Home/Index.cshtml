@@ -1,8 +1,230 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model PureAvocadoes.ViewModels.HomeIndexViewModel
+@{
+    ViewData["Title"] = "Home";
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var isAdmin = isAuthenticated && User.IsInRole("Admin");
+
+    var featured = Model.FeaturedMovie;
+
+    var heroSlides = new List<(PureAvocadoes.ViewModels.MovieCardViewModel Movie, string Kicker, string Sub)>();
+    if (featured is not null)
+    {
+        heroSlides.Add((featured, "Featured Spotlight", "Your guide to the best-rated movies on Pure Avocadoes."));
+
+        var secondaryPool = Model.TopAvocadoPicks
+            .Concat(Model.RecentMovies)
+            .Where(m => m.MovieId != featured.MovieId)
+            .GroupBy(m => m.MovieId)
+            .Select(g => g.First())
+            .Take(2)
+            .ToList();
+
+        if (secondaryPool.Count > 0)
+        {
+            heroSlides.Add((secondaryPool[0], "Top Rated Pick", secondaryPool[0].HasReviews
+                ? $"Rated {secondaryPool[0].FormattedScore}/5 by the Pure Avocadoes community."
+                : "Recently added to the Pure Avocadoes catalog."));
+        }
+        if (secondaryPool.Count > 1)
+        {
+            heroSlides.Add((secondaryPool[1], "Audience Highlight", secondaryPool[1].HasReviews
+                ? $"Rated {secondaryPool[1].FormattedScore}/5 by the Pure Avocadoes community."
+                : "Recently added to the Pure Avocadoes catalog."));
+        }
+    }
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+@section FullBleedTop {
+    @* The page needs one h1; the hero reuses h2 per slide because a carousel
+       can render several of them at once. *@
+    <h1 class="sr-only">Pure Avocadoes: browse movies and audience reviews</h1>
+
+    @if (!Model.HasDatabaseError && heroSlides.Count > 0)
+    {
+        <section class="relative overflow-hidden bg-cinema"
+                 data-hero-carousel
+                 aria-label="Featured movie highlights"
+                 aria-roledescription="carousel">
+            <div class="relative h-[24rem] sm:h-[28rem] lg:h-[32rem]">
+                @for (var i = 0; i < heroSlides.Count; i++)
+                {
+                    var slide = heroSlides[i];
+                    var slidePoster = PureAvocadoes.ViewModels.MovieCardViewModel.SanitizePosterUrl(slide.Movie.PosterUrl);
+                    <article class="absolute inset-0 @(i == 0 ? "is-active" : "")"
+                             data-hero-slide
+                             aria-hidden="@(i == 0 ? "false" : "true")">
+                        <a class="absolute inset-0" href="/Movies/Details/@slide.Movie.MovieId">
+                            @if (!string.IsNullOrEmpty(slidePoster))
+                            {
+                                if (i == 0)
+                                {
+                                    <img class="h-full w-full object-cover object-top" src="@slidePoster" alt="" fetchpriority="high" width="1600" height="900" />
+                                }
+                                else
+                                {
+                                    <img class="h-full w-full object-cover object-top" src="@slidePoster" alt="" loading="lazy" width="1600" height="900" />
+                                }
+                            }
+                            <div class="absolute inset-0 bg-gradient-to-t from-cinema via-cinema/70 to-cinema/10" aria-hidden="true"></div>
+                            <div class="absolute inset-x-0 bottom-12 mx-auto w-full max-w-[68.75rem] px-4 md:px-[0.9375rem]">
+                                <p class="mb-2 font-display text-xs font-medium uppercase tracking-[0.18em] text-avocado-200">@slide.Kicker</p>
+                                <h2 class="max-w-2xl text-2xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl">@slide.Movie.Title</h2>
+                                <p class="mt-2 max-w-xl text-sm text-white/85 sm:text-base">@slide.Sub</p>
+                            </div>
+                        </a>
+                    </article>
+                }
+            </div>
+
+            @if (heroSlides.Count > 1)
+            {
+                <button type="button"
+                        class="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition-colors duration-150 hover:bg-white max-sm:hidden"
+                        data-hero-prev aria-label="Previous highlight">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="12.5 4.5 7 10 12.5 15.5" />
+                    </svg>
+                </button>
+                <button type="button"
+                        class="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition-colors duration-150 hover:bg-white max-sm:hidden"
+                        data-hero-next aria-label="Next highlight">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="7.5 4.5 13 10 7.5 15.5" />
+                    </svg>
+                </button>
+
+                <div class="absolute inset-x-0 bottom-4 z-20 flex justify-center gap-2" role="tablist" aria-label="Choose highlight">
+                    @for (var i = 0; i < heroSlides.Count; i++)
+                    {
+                        <button type="button"
+                                class="h-2.5 w-2.5 rounded-full transition-colors duration-150 @(i == 0 ? "is-active" : "")"
+                                data-hero-dot
+                                aria-label="Show highlight @(i + 1)"
+                                aria-current="@(i == 0 ? "true" : "false")"></button>
+                    }
+                </div>
+            }
+        </section>
+    }
+}
+
+@if (Model.HasDatabaseError)
+{
+    <section aria-label="Catalog error">
+        <div class="alert alert-danger" role="alert">
+            <span><strong>Error:</strong> @(Model.ErrorMessage ?? "Unable to load movies from the database right now.")</span>
+        </div>
+        <div class="empty-state">
+            <h2>Movie catalog is temporarily unavailable</h2>
+            <p>Check your database connection and reload the page to view featured films and audience scores.</p>
+            <a class="btn btn-primary" asp-controller="Home" asp-action="Index">Retry Loading Catalog</a>
+        </div>
+    </section>
+}
+else if (featured is null)
+{
+    <section aria-label="Empty catalog">
+        <div class="empty-state">
+            <h2>No movies are in the catalog yet</h2>
+            <p>Once demo or administrator movies are added, featured films and audience Avocado Scores will appear here.</p>
+            <div class="flex flex-wrap justify-center gap-2">
+                @if (isAdmin)
+                {
+                    <a class="btn btn-primary" href="/Admin/Movies">Manage Movies</a>
+                }
+                else if (isAuthenticated)
+                {
+                    <a class="btn btn-primary" href="/Movies">Go to Movie Catalog</a>
+                }
+                else
+                {
+                    <a class="btn btn-primary" asp-controller="Account" asp-action="Login">Sign In</a>
+                }
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    @if (Model.RecentMovies.Count > 0)
+    {
+        <section class="mb-10" aria-labelledby="recent-movies-heading">
+            <div class="mb-4 flex items-end justify-between gap-4">
+                <div>
+                    <h2 id="recent-movies-heading" class="section-title">Movies in the Catalog</h2>
+                    <p class="mt-1.5 text-sm text-ink-muted">The latest additions to Pure Avocadoes, playing now.</p>
+                </div>
+                <a class="shrink-0 text-xs font-semibold uppercase tracking-[0.04em] text-avocado-500 hover:text-avocado-900" href="/Movies">View all</a>
+            </div>
+
+            <div class="relative" data-carousel>
+                <button type="button"
+                        class="absolute -left-3 top-[38%] z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-ink shadow-sm transition-colors duration-150 hover:border-avocado-400 disabled:opacity-0 max-sm:hidden"
+                        data-carousel-prev aria-label="Scroll recent movies left">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="12.5 4.5 7 10 12.5 15.5" />
+                    </svg>
+                </button>
+
+                <div class="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                     data-carousel-track tabindex="0" aria-label="Recent movies rail">
+                    @foreach (var movie in Model.RecentMovies)
+                    {
+                        <div class="flex w-[8.6rem] shrink-0 snap-start sm:w-[10.5rem] md:w-[11.5rem]">
+                            <partial name="_MovieCard" model="movie" />
+                        </div>
+                    }
+                </div>
+
+                <button type="button"
+                        class="absolute -right-3 top-[38%] z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-ink shadow-sm transition-colors duration-150 hover:border-avocado-400 disabled:opacity-0 max-sm:hidden"
+                        data-carousel-next aria-label="Scroll recent movies right">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="7.5 4.5 13 10 7.5 15.5" />
+                    </svg>
+                </button>
+            </div>
+        </section>
+    }
+
+    @if (Model.TopAvocadoPicks.Count > 0)
+    {
+        <section aria-labelledby="top-picks-heading">
+            <div class="mb-4 flex items-end justify-between gap-4">
+                <div>
+                    <h2 id="top-picks-heading" class="section-title">Top Avocado Picks</h2>
+                    <p class="mt-1.5 text-sm text-ink-muted">Highest community Avocado Scores, backed by real reviews.</p>
+                </div>
+                <a class="shrink-0 text-xs font-semibold uppercase tracking-[0.04em] text-avocado-500 hover:text-avocado-900" href="/Movies?sort=top-rated">View all</a>
+            </div>
+
+            <div class="relative" data-carousel>
+                <button type="button"
+                        class="absolute -left-3 top-[38%] z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-ink shadow-sm transition-colors duration-150 hover:border-avocado-400 disabled:opacity-0 max-sm:hidden"
+                        data-carousel-prev aria-label="Scroll top picks left">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="12.5 4.5 7 10 12.5 15.5" />
+                    </svg>
+                </button>
+
+                <div class="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                     data-carousel-track tabindex="0" aria-label="Top Avocado Picks rail">
+                    @foreach (var movie in Model.TopAvocadoPicks)
+                    {
+                        <div class="flex w-[8.6rem] shrink-0 snap-start sm:w-[10.5rem] md:w-[11.5rem]">
+                            <partial name="_MovieCard" model="movie" />
+                        </div>
+                    }
+                </div>
+
+                <button type="button"
+                        class="absolute -right-3 top-[38%] z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-ink shadow-sm transition-colors duration-150 hover:border-avocado-400 disabled:opacity-0 max-sm:hidden"
+                        data-carousel-next aria-label="Scroll top picks right">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="7.5 4.5 13 10 7.5 15.5" />
+                    </svg>
+                </button>
+            </div>
+        </section>
+    }
+}

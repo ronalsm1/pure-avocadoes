@@ -1,6 +1,36 @@
-﻿@{
+@{
     ViewData["Title"] = "Privacy Policy";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<section class="mx-auto w-full max-w-3xl" aria-labelledby="privacy-heading">
+    <div class="card">
+        <header class="mb-5 border-b border-line pb-4">
+            <p class="kicker">Platform Transparency</p>
+            <h1 id="privacy-heading" class="mt-1 font-display text-[1.75rem] font-medium uppercase tracking-[0.03em]">Privacy Policy</h1>
+            <p class="mt-1 text-sm text-ink-muted">How Pure Avocadoes handles account details and movie reviews.</p>
+        </header>
+
+        <section class="mb-5 border-b border-line pb-5" aria-labelledby="privacy-account-heading">
+            <h2 id="privacy-account-heading" class="mb-2 text-base font-semibold">Account Information</h2>
+            <p class="text-sm leading-relaxed">
+                Registration stores your display name, email address, and a salted password hash for authentication.
+                Your email address is kept private from public movie pages and review listings.
+            </p>
+        </section>
+
+        <section class="mb-5 border-b border-line pb-5" aria-labelledby="privacy-reviews-heading">
+            <h2 id="privacy-reviews-heading" class="mb-2 text-base font-semibold">Public Reviews &amp; Ratings</h2>
+            <p class="text-sm leading-relaxed">
+                Movie ratings and written reviews you publish appear alongside your display name on the corresponding movie page
+                and contribute to the community Avocado Score.
+            </p>
+        </section>
+
+        <section aria-labelledby="privacy-cookies-heading">
+            <h2 id="privacy-cookies-heading" class="mb-2 text-base font-semibold">Authentication Cookies</h2>
+            <p class="text-sm leading-relaxed">
+                Pure Avocadoes uses essential HTTP-only authentication and anti-forgery cookies to keep your session signed in and protect forms.
+            </p>
+        </section>
+    </div>
+</section>
