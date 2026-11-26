@@ -1,0 +1,60 @@
+@model PureAvocadoes.ViewModels.ReviewFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+<fieldset class="form-group" data-star-rating data-selected-rating="@(Model.Rating?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "0")">
+    <legend class="field-label">Pick a star rating</legend>
+
+    <div class="flex flex-wrap items-center gap-3 rounded-card border border-line bg-paper-alt px-4 py-3">
+        <div class="flex items-center gap-1">
+            @for (var star = 1; star <= 5; star++)
+            {
+                var inputId = $"pa-rating-{star}";
+                var labelText = star == 1 ? "1 star" : $"{star} stars";
+                <div class="text-line-strong transition-colors duration-100 [&.is-lit]:text-gold-500" data-star-value="@star">
+                    <input type="radio"
+                           id="@inputId"
+                           name="Rating"
+                           value="@star"
+                           class="peer sr-only"
+                           checked="@(Model.Rating == star)"
+                           required />
+                    <label for="@inputId"
+                           class="block rounded-control p-0.5 transition-transform duration-100 hover:scale-110 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-gold-500"
+                           title="Rate @star out of 5">
+                        <svg width="34" height="34" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M10 1.8l2.5 5.1 5.6.8-4 4 .9 5.6L10 14.6l-5 2.7.9-5.6-4-4 5.6-.8L10 1.8z" />
+                        </svg>
+                        <span class="sr-only">@labelText</span>
+                    </label>
+                </div>
+            }
+        </div>
+
+        <p class="text-sm font-semibold tabular-nums text-ink" data-rating-readout aria-live="polite">
+            @(Model.Rating.HasValue ? $"{Model.Rating.Value} / 5" : "Select 1 to 5 stars")
+        </p>
+    </div>
+
+    <span asp-validation-for="Rating" class="field-error"></span>
+</fieldset>
+
+<div class="form-group">
+    @{
+        var reviewText = Model.ReviewText ?? string.Empty;
+    }
+    <label for="ReviewText" class="field-label">Your review</label>
+    <textarea id="ReviewText"
+              name="ReviewText"
+              class="field min-h-[8rem] resize-y"
+              rows="5"
+              maxlength="2000"
+              required
+              data-char-counter-target="pa-review-char-count"
+              placeholder="Share what worked, stood out, or fell short without spoiling key twists...">@reviewText</textarea>
+    <div class="mt-1 flex justify-between gap-3 text-xs text-ink-muted">
+        <span>Minimum 1 character, up to 2,000 characters.</span>
+        <span id="pa-review-char-count" class="tabular-nums">@reviewText.Length / 2,000</span>
+    </div>
+    <span asp-validation-for="ReviewText" class="field-error"></span>
+</div>
