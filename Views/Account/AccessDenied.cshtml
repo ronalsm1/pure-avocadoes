@@ -1,0 +1,32 @@
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<section class="mx-auto w-full max-w-xl" aria-labelledby="access-denied-heading">
+    <div class="card">
+        <div class="alert alert-danger" role="alert">
+            <span><strong>Access denied:</strong> Administrator or resource-owner permissions are required for this action.</span>
+        </div>
+
+        <header class="mb-5 border-b border-line pb-4">
+            <p class="kicker text-danger-fg">Permission Guard</p>
+            <h1 id="access-denied-heading" class="mt-1 text-xl font-bold">Access denied</h1>
+            <p class="mt-1 text-sm text-ink-muted">You do not have permission to view this page or perform this action.</p>
+        </header>
+
+        <div class="flex flex-wrap gap-2">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Back to Home</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-secondary">Sign Out</button>
+                </form>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" class="btn btn-secondary">Sign In</a>
+            }
+        </div>
+    </div>
+</section>

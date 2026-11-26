@@ -1,0 +1,19 @@
+@model PureAvocadoes.ViewModels.ProfileUpdateViewModel
+
+<form asp-controller="Account" asp-action="Profile" method="post" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div class="form-group">
+        <label asp-for="FullName" class="field-label"></label>
+        <input asp-for="FullName" class="field" autocomplete="name" maxlength="120" />
+        <span asp-validation-for="FullName" class="field-error"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Email" class="field-label"></label>
+        <input asp-for="Email" type="email" class="field" autocomplete="email" maxlength="254" />
+        <span asp-validation-for="Email" class="field-error"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Profile</button>
+</form>
