@@ -16,3 +16,7 @@ Thumbs.db
 !.env.example
 **/secrets.json
 appsettings.Development.json
+appsettings.json
+
+# Node.js dependencies
+node_modules/

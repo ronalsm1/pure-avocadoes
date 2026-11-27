@@ -25,11 +25,13 @@
     Compile Styles/app.css into wwwroot/css/site.css before the app is built so
     the published output always carries up-to-date CSS.
   -->
+  
   <Target Name="BuildTailwindCss" BeforeTargets="Build"
-          Condition="Exists('$(MSBuildProjectDirectory)\node_modules\tailwindcss\lib\cli.js')">
-    <Exec Command="node &quot;$(MSBuildProjectDirectory)\node_modules\tailwindcss\lib\cli.js&quot; -i &quot;$(MSBuildProjectDirectory)\Styles\app.css&quot; -o &quot;$(MSBuildProjectDirectory)\wwwroot\css\site.css&quot; --minify"
-          WorkingDirectory="$(MSBuildProjectDirectory)"
-          ContinueOnError="true" />
+          Condition="Exists('$(MSBuildProjectDirectory)/node_modules/tailwindcss/lib/cli.js')">
+      <Exec Command="node &quot;$(MSBuildProjectDirectory)/node_modules/tailwindcss/lib/cli.js&quot; -i &quot;$(MSBuildProjectDirectory)/Styles/app.css&quot; -o &quot;$(MSBuildProjectDirectory)/wwwroot/css/site.css&quot; --minify"
+            WorkingDirectory="$(MSBuildProjectDirectory)"
+            ContinueOnError="true" />
   </Target>
+
 
 </Project>

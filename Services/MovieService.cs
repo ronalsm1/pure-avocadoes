@@ -104,8 +104,7 @@ namespace PureAvocadoes.Services
                 .ToListAsync(cancellationToken);
 
             var availableGenres = metadata
-                .Select(m => m.Genre)
-                .Where(g => !string.IsNullOrWhiteSpace(g))
+                .SelectMany(m => SplitGenres(m.Genre))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(g => g, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -149,12 +148,6 @@ namespace PureAvocadoes.Services
                 query = query.Where(m => m.Title.ToLower().Contains(searchLower));
             }
 
-            if (normalizedGenre is not null)
-            {
-                var genreLower = normalizedGenre.ToLowerInvariant();
-                query = query.Where(m => m.Genre.ToLower() == genreLower);
-            }
-
             if (selectedYear.HasValue)
             {
                 var yearValue = (ushort)selectedYear.Value;
@@ -172,6 +165,12 @@ namespace PureAvocadoes.Services
                         orderby s.AverageRating descending, s.TotalReviews descending, m.ReleaseYear descending, m.Title ascending, m.MovieId ascending
                         select new { Movie = m, s.TotalReviews, s.AverageRating })
                         .ToListAsync(cancellationToken);
+                        if (normalizedGenre is not null)
+                        {
+                            ratedRows = ratedRows
+                                .Where(r => MovieHasGenre(r.Movie.Genre, normalizedGenre))
+                                .ToList();
+                        }
 
                     cards = ratedRows
                         .Select(r => ToCardViewModel(
@@ -185,6 +184,12 @@ namespace PureAvocadoes.Services
                 else
                 {
                     var matchedMovies = await query.ToListAsync(cancellationToken);
+                    if (normalizedGenre is not null)
+                    {
+                        matchedMovies = matchedMovies
+                            .Where(m => MovieHasGenre(m.Genre, normalizedGenre))
+                            .ToList();
+                    }
                     var ratingSummaries = await LoadRatingSummaryLookupAsync(
                         matchedMovies.Select(m => m.MovieId).ToArray(),
                         cancellationToken);
@@ -210,6 +215,12 @@ namespace PureAvocadoes.Services
 
                 // shortcut: course-project catalog loads the full matched movie list without server-side pagination.
                 var matchedMovies = await orderedQuery.ToListAsync(cancellationToken);
+                if (normalizedGenre is not null)
+                {
+                    matchedMovies = matchedMovies
+                        .Where(m => MovieHasGenre(m.Genre, normalizedGenre))
+                        .ToList();
+                }
 
                 var ratingSummaries = await LoadRatingSummaryLookupAsync(
                     matchedMovies.Select(m => m.MovieId).ToArray(),
@@ -273,12 +284,6 @@ namespace PureAvocadoes.Services
                 query = query.Where(m => m.Title.ToLower().Contains(searchLower));
             }
 
-            if (normalizedGenre is not null)
-            {
-                var genreLower = normalizedGenre.ToLowerInvariant();
-                query = query.Where(m => m.Genre.ToLower() == genreLower);
-            }
-
             if (selectedYear.HasValue)
             {
                 var yearValue = (ushort)selectedYear.Value;
@@ -289,6 +294,12 @@ namespace PureAvocadoes.Services
                 .OrderByDescending(m => m.ReleaseYear)
                 .ThenBy(m => m.Title)
                 .ToListAsync(cancellationToken);
+                if (normalizedGenre is not null)
+                {
+                    movies = movies
+                        .Where(m => MovieHasGenre(m.Genre, normalizedGenre))
+                        .ToList();
+                }
 
             var ratingSummaries = await LoadRatingSummaryLookupAsync(
                 movies.Select(m => m.MovieId).ToArray(),
@@ -610,6 +621,40 @@ namespace PureAvocadoes.Services
                 TotalReviews = summary.TotalReviews,
                 AverageRating = summary.AverageRating
             };
+        }
+
+        private static IEnumerable<string> SplitGenres(string? genreValue)
+        {
+            if (string.IsNullOrWhiteSpace(genreValue))
+            {
+                return Array.Empty<string>();
+            }
+
+            return genreValue
+                .Split(
+                    new[] { ',', '/', '&', ';' },
+                    StringSplitOptions.RemoveEmptyEntries |
+                    StringSplitOptions.TrimEntries)
+                .Where(genre => !string.IsNullOrWhiteSpace(genre));
+        }
+
+        private static bool MovieHasGenre(
+            string? movieGenre,
+            string selectedGenre)
+        {
+            if (string.IsNullOrWhiteSpace(movieGenre) ||
+                string.IsNullOrWhiteSpace(selectedGenre))
+            {
+                return false;
+            }
+
+            var targetGenre = selectedGenre.Trim();
+
+            return SplitGenres(movieGenre).Any(genre =>
+                string.Equals(
+                    genre,
+                    targetGenre,
+                    StringComparison.OrdinalIgnoreCase));
         }
 
         private static string? NormalizeCatalogSort(string? sort)
