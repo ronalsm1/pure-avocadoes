@@ -1,0 +1,50 @@
+@model PureAvocadoes.ViewModels.MovieFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+<div class="form-group">
+    <label asp-for="Title" class="field-label"></label>
+    <input asp-for="Title" class="field" maxlength="200" />
+    <span asp-validation-for="Title" class="field-error"></span>
+</div>
+
+<div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+    <div class="form-group">
+        <label asp-for="Genre" class="field-label"></label>
+        <input asp-for="Genre" class="field" maxlength="80" placeholder="e.g. Sci-Fi, Drama, Mystery" />
+        <span asp-validation-for="Genre" class="field-error"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Director" class="field-label"></label>
+        <input asp-for="Director" class="field" maxlength="150" />
+        <span asp-validation-for="Director" class="field-error"></span>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+    <div class="form-group">
+        <label asp-for="ReleaseYear" class="field-label"></label>
+        <input asp-for="ReleaseYear" type="number" class="field tabular-nums" min="1888" max="2100" />
+        <span asp-validation-for="ReleaseYear" class="field-error"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="DurationMinutes" class="field-label"></label>
+        <input asp-for="DurationMinutes" type="number" class="field tabular-nums" min="1" max="1440" />
+        <span asp-validation-for="DurationMinutes" class="field-error"></span>
+    </div>
+</div>
+
+<div class="form-group">
+    <label asp-for="PosterUrl" class="field-label"></label>
+    <input asp-for="PosterUrl" class="field" maxlength="2048" placeholder="/images/example-poster.jpg or https://..." />
+    <p class="mt-1 text-xs text-ink-muted">Leave blank to use the Pure Avocadoes poster placeholder.</p>
+    <span asp-validation-for="PosterUrl" class="field-error"></span>
+</div>
+
+<div class="form-group">
+    <label asp-for="Synopsis" class="field-label"></label>
+    <textarea asp-for="Synopsis" class="field min-h-[8rem] resize-y" rows="5"></textarea>
+    <span asp-validation-for="Synopsis" class="field-error"></span>
+</div>

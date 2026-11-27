@@ -1,0 +1,135 @@
+@model PureAvocadoes.ViewModels.AdminMoviesIndexViewModel
+@{
+    ViewData["Title"] = "Manage Movies";
+}
+
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <p class="kicker">Movie Management</p>
+        <h1 class="mt-1 font-display text-[1.75rem] font-medium uppercase tracking-[0.03em]">Manage Movies</h1>
+        <p class="mt-1 text-sm text-ink-muted">Add, update, or remove movies in the Pure Avocadoes catalog.</p>
+    </div>
+    <a class="btn btn-primary" asp-controller="AdminMovies" asp-action="Create">Add Movie</a>
+</div>
+
+<section class="mb-6 rounded-card border border-line bg-white p-4" aria-label="Search admin movie list">
+    <form method="get" asp-controller="AdminMovies" asp-action="Index" role="search" class="flex flex-wrap items-end gap-3">
+        <div class="min-w-[14rem] flex-1">
+            <label class="field-label" for="admin-movie-search">Search by Title</label>
+            <input id="admin-movie-search"
+                   name="search"
+                   type="search"
+                   class="field"
+                   value="@Model.Search"
+                   placeholder="Filter movies by title..." />
+        </div>
+
+        <div class="flex gap-2">
+            <button type="submit" class="btn btn-primary">Search</button>
+            @if (!string.IsNullOrWhiteSpace(Model.Search))
+            {
+                <a class="btn btn-secondary" asp-controller="AdminMovies" asp-action="Index">Reset</a>
+            }
+        </div>
+    </form>
+</section>
+
+@if (Model.HasDatabaseError)
+{
+    <section aria-label="Admin movies error">
+        <div class="alert alert-danger" role="alert">
+            <span><strong>Error:</strong> @(Model.ErrorMessage ?? "Unable to load movies from the database.")</span>
+        </div>
+    </section>
+}
+else if (Model.Movies.Count == 0)
+{
+    <section aria-label="Empty admin movie list">
+        <div class="empty-state">
+            <h2>@(string.IsNullOrWhiteSpace(Model.Search) ? "No movies in catalog yet" : "No matching movies")</h2>
+            <p>
+                @(string.IsNullOrWhiteSpace(Model.Search)
+                    ? "Create the first movie record to populate the public catalog."
+                    : "Try another title keyword or reset the search filter.")
+            </p>
+            <div class="flex flex-wrap justify-center gap-2">
+                <a class="btn btn-primary" asp-controller="AdminMovies" asp-action="Create">Add Movie</a>
+                @if (!string.IsNullOrWhiteSpace(Model.Search))
+                {
+                    <a class="btn btn-secondary" asp-controller="AdminMovies" asp-action="Index">Show All Movies</a>
+                }
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    <section aria-label="Movies table">
+        <div class="overflow-hidden rounded-card border border-line bg-white">
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Poster</th>
+                            <th scope="col">Title</th>
+                            <th scope="col">Genre</th>
+                            <th scope="col">Year</th>
+                            <th scope="col">Duration</th>
+                            <th scope="col">Avocado Score / Reviews</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var movie in Model.Movies)
+                        {
+                            var safePoster = PureAvocadoes.ViewModels.MovieCardViewModel.SanitizePosterUrl(movie.PosterUrl);
+                            <tr>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(safePoster))
+                                    {
+                                        <img src="@safePoster"
+                                             alt="Poster for @movie.Title"
+                                             width="40"
+                                             height="60"
+                                             class="h-[60px] w-[40px] rounded-[3px] object-cover" />
+                                    }
+                                    else
+                                    {
+                                        <span class="flex h-[60px] w-[40px] items-center justify-center rounded-[3px] bg-avocado-900 text-[0.625rem] font-semibold text-avocado-200" aria-hidden="true">PA</span>
+                                    }
+                                </td>
+                                <td>
+                                    <a class="font-semibold text-avocado-500 hover:text-avocado-900" asp-controller="Movies" asp-action="Details" asp-route-id="@movie.MovieId">
+                                        @movie.Title
+                                    </a>
+                                    <div class="text-xs text-ink-muted">@movie.Director</div>
+                                </td>
+                                <td>@movie.Genre</td>
+                                <td class="tabular-nums">@movie.ReleaseYear</td>
+                                <td class="tabular-nums">@movie.DurationMinutes min</td>
+                                <td class="tabular-nums">
+                                    @if (movie.HasReviews)
+                                    {
+                                        <span class="font-semibold">@movie.FormattedScore / 5</span>
+                                        <span class="text-xs text-ink-muted">(@movie.TotalReviews)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-ink-faint">No reviews yet</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <a class="btn btn-sm btn-secondary" asp-controller="Movies" asp-action="Details" asp-route-id="@movie.MovieId">Details</a>
+                                        <a class="btn btn-sm btn-secondary" asp-controller="AdminMovies" asp-action="Edit" asp-route-id="@movie.MovieId">Edit</a>
+                                        <a class="btn btn-sm btn-danger-outline" asp-controller="AdminMovies" asp-action="Delete" asp-route-id="@movie.MovieId">Delete</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+}

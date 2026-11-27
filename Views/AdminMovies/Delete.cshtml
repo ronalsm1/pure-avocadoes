@@ -1,0 +1,71 @@
+@model PureAvocadoes.ViewModels.AdminMovieDeleteViewModel
+@{
+    var movie = Model.Movie;
+    ViewData["Title"] = "Delete Movie";
+    var conflictError = ViewData["ConflictError"] as string;
+}
+
+<nav class="mb-5 flex flex-wrap items-center gap-2 text-sm text-ink-muted" aria-label="Breadcrumb">
+    <a class="font-semibold text-avocado-500 hover:text-avocado-900" asp-controller="AdminMovies" asp-action="Index">Manage Movies</a>
+    <span aria-hidden="true">/</span>
+    <a class="font-semibold text-avocado-500 hover:text-avocado-900" asp-controller="Movies" asp-action="Details" asp-route-id="@movie.MovieId">@movie.Title</a>
+    <span aria-hidden="true">/</span>
+    <span class="text-ink">Delete Movie</span>
+</nav>
+
+<section class="mx-auto w-full max-w-2xl" aria-labelledby="delete-movie-heading">
+    <div class="card">
+        <header class="mb-5 border-b border-line pb-4">
+            <p class="kicker text-danger-fg">Catalog Safeguard</p>
+            <h1 id="delete-movie-heading" class="mt-1 text-xl font-bold">Delete Movie</h1>
+            <p class="mt-1 text-sm text-ink-muted">Review movie details before removing this record from the catalog.</p>
+        </header>
+
+        @if (!string.IsNullOrWhiteSpace(conflictError))
+        {
+            <div class="alert alert-danger" role="alert">
+                <span><strong>Error:</strong> @conflictError</span>
+            </div>
+        }
+        else if (!Model.CanDelete)
+        {
+            <div class="alert alert-warning" role="status">
+                <span>
+                    <strong>Warning:</strong>
+                    "@movie.Title" currently has <span class="tabular-nums">@Model.DependentReviewCount</span> dependent audience @(Model.DependentReviewCount == 1 ? "review" : "reviews").
+                    Because reviews use restrictive foreign keys, this movie cannot be deleted until dependent reviews are removed.
+                </span>
+            </div>
+        }
+
+        <dl class="mb-5 divide-y divide-line">
+            <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+                <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Title</dt>
+                <dd class="text-sm">@movie.Title</dd>
+            </div>
+            <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+                <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Genre</dt>
+                <dd class="text-sm">@movie.Genre</dd>
+            </div>
+            <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+                <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Release Year</dt>
+                <dd class="text-sm tabular-nums">@movie.ReleaseYear</dd>
+            </div>
+            <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+                <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Audience Reviews</dt>
+                <dd class="text-sm tabular-nums">@Model.DependentReviewCount</dd>
+            </div>
+        </dl>
+
+        <form asp-controller="AdminMovies" asp-action="Delete" asp-route-id="@movie.MovieId" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="flex flex-wrap gap-2">
+                <button type="submit"
+                        class="btn btn-danger"
+                        disabled="@(!Model.CanDelete)">Confirm Delete</button>
+                <a class="btn btn-secondary" asp-controller="AdminMovies" asp-action="Index">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
