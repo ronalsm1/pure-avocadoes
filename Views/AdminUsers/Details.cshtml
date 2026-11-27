@@ -1,0 +1,81 @@
+@model PureAvocadoes.Dtos.UserDetailDto
+@{
+    ViewData["Title"] = $"User Details: {Model.FullName}";
+    var isAdminRole = string.Equals(Model.Role, "Admin", StringComparison.OrdinalIgnoreCase);
+}
+
+<nav class="mb-5 flex flex-wrap items-center gap-2 text-sm text-ink-muted" aria-label="Breadcrumb">
+    <a class="font-semibold text-avocado-500 hover:text-avocado-900" asp-controller="AdminUsers" asp-action="Index">Back to Manage Users</a>
+    <span aria-hidden="true">/</span>
+    <span class="text-ink">@Model.FullName</span>
+</nav>
+
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <p class="kicker">User Profile</p>
+        <h1 class="mt-1 font-display text-[1.75rem] font-medium uppercase tracking-[0.03em]">@Model.FullName</h1>
+        <p class="mt-1 text-sm text-ink-muted">@Model.Email</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <a class="btn btn-secondary" asp-controller="AdminUsers" asp-action="Edit" asp-route-id="@Model.UserId">Edit User</a>
+        <a class="btn btn-danger" asp-controller="AdminUsers" asp-action="Delete" asp-route-id="@Model.UserId">Delete User</a>
+    </div>
+</div>
+
+<section class="card mb-6" aria-label="User metadata">
+    <dl class="divide-y divide-line">
+        <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+            <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">User ID</dt>
+            <dd class="text-sm tabular-nums">@Model.UserId</dd>
+        </div>
+        <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+            <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Role</dt>
+            <dd>
+                <span class="rounded-[3px] px-2 py-0.5 text-xs font-semibold @(isAdminRole ? "bg-gold-100 text-warning-fg" : "bg-avocado-100 text-avocado-500")">@Model.Role</span>
+            </dd>
+        </div>
+        <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+            <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Member Since</dt>
+            <dd class="text-sm">@Model.CreatedAt.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)</dd>
+        </div>
+        <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+            <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Total Reviews</dt>
+            <dd class="text-sm tabular-nums">@Model.ReviewCount</dd>
+        </div>
+    </dl>
+</section>
+
+<section aria-labelledby="user-reviews-heading">
+    <h2 id="user-reviews-heading" class="section-title mb-4">Authored Movie Reviews (@Model.ReviewCount)</h2>
+
+    @if (Model.Reviews.Count == 0)
+    {
+        <div class="empty-state">
+            <p>This user has not published any reviews yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            @foreach (var review in Model.Reviews)
+            {
+                var displayDate = (review.UpdatedAt ?? review.CreatedAt)
+                    .ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture);
+
+                <article class="rounded-card border border-line bg-paper-alt p-4">
+                    <div class="mb-2 flex flex-wrap items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <h3 class="truncate text-sm font-semibold">
+                                <a class="hover:text-avocado-500" href="/Movies/Details/@review.MovieId">@review.MovieTitle</a>
+                            </h3>
+                            <p class="text-xs text-ink-muted">@displayDate</p>
+                        </div>
+                        <span class="shrink-0 text-xs font-semibold tabular-nums">@review.Rating / 5</span>
+                    </div>
+
+                    <p class="text-sm leading-relaxed text-ink">@review.ReviewText</p>
+                </article>
+            }
+        </div>
+    }
+</section>

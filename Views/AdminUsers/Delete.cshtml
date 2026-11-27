@@ -1,0 +1,86 @@
+@model PureAvocadoes.ViewModels.AdminUserDeleteViewModel
+@{
+    var user = Model.User;
+    ViewData["Title"] = "Delete User";
+    var conflictError = ViewData["ConflictError"] as string;
+    var isAdminRole = string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase);
+}
+
+<nav class="mb-5 flex flex-wrap items-center gap-2 text-sm text-ink-muted" aria-label="Breadcrumb">
+    <a class="font-semibold text-avocado-500 hover:text-avocado-900" asp-controller="AdminUsers" asp-action="Index">Manage Users</a>
+    <span aria-hidden="true">/</span>
+    <a class="font-semibold text-avocado-500 hover:text-avocado-900" asp-controller="AdminUsers" asp-action="Details" asp-route-id="@user.UserId">@user.FullName</a>
+    <span aria-hidden="true">/</span>
+    <span class="text-ink">Delete User</span>
+</nav>
+
+<section class="mx-auto w-full max-w-2xl" aria-labelledby="delete-user-heading">
+    <div class="card">
+        <header class="mb-5 border-b border-line pb-4">
+            <p class="kicker text-danger-fg">Account Safeguard</p>
+            <h1 id="delete-user-heading" class="mt-1 text-xl font-bold">Delete User</h1>
+            <p class="mt-1 text-sm text-ink-muted">Review account details and safeguards before removing this user.</p>
+        </header>
+
+        @if (!string.IsNullOrWhiteSpace(conflictError))
+        {
+            <div class="alert alert-danger" role="alert">
+                <span><strong>Error:</strong> @conflictError</span>
+            </div>
+        }
+        else if (Model.IsCurrentUser)
+        {
+            <div class="alert alert-warning" role="status">
+                <span><strong>Blocked:</strong> You cannot delete your own currently signed-in Admin account.</span>
+            </div>
+        }
+        else if (Model.IsOnlyAdmin)
+        {
+            <div class="alert alert-warning" role="status">
+                <span><strong>Blocked:</strong> This is the last remaining Admin account and cannot be deleted.</span>
+            </div>
+        }
+        else if (user.ReviewCount > 0)
+        {
+            <div class="alert alert-warning" role="status">
+                <span>
+                    <strong>Blocked:</strong>
+                    "@user.FullName" currently has <span class="tabular-nums">@user.ReviewCount</span> authored @(user.ReviewCount == 1 ? "review" : "reviews").
+                    Because reviews use restrictive foreign keys (<code>ON DELETE RESTRICT</code>), accounts with review history cannot be deleted.
+                </span>
+            </div>
+        }
+
+        <dl class="mb-5 divide-y divide-line">
+            <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+                <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Full Name</dt>
+                <dd class="text-sm">@user.FullName</dd>
+            </div>
+            <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+                <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Email</dt>
+                <dd class="text-sm">@user.Email</dd>
+            </div>
+            <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+                <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Role</dt>
+                <dd>
+                    <span class="rounded-[3px] px-2 py-0.5 text-xs font-semibold @(isAdminRole ? "bg-gold-100 text-warning-fg" : "bg-avocado-100 text-avocado-500")">@user.Role</span>
+                </dd>
+            </div>
+            <div class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 py-2">
+                <dt class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Movie Reviews</dt>
+                <dd class="text-sm tabular-nums">@user.ReviewCount</dd>
+            </div>
+        </dl>
+
+        <form asp-controller="AdminUsers" asp-action="Delete" asp-route-id="@user.UserId" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="flex flex-wrap gap-2">
+                <button type="submit"
+                        class="btn btn-danger"
+                        disabled="@(!Model.CanDelete)">Confirm Delete</button>
+                <a class="btn btn-secondary" asp-controller="AdminUsers" asp-action="Index">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>

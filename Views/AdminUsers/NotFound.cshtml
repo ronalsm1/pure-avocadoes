@@ -1,0 +1,11 @@
+@{
+    ViewData["Title"] = "User Not Found";
+}
+
+<section aria-labelledby="user-not-found-heading">
+    <div class="empty-state">
+        <h1 id="user-not-found-heading" class="mb-2 text-lg font-semibold">User Not Found</h1>
+        <p>The requested user account could not be found in Pure Avocadoes.</p>
+        <a class="btn btn-primary" asp-controller="AdminUsers" asp-action="Index">Back to Manage Users</a>
+    </div>
+</section>

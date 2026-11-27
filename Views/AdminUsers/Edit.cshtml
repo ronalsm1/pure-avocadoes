@@ -1,0 +1,70 @@
+@model PureAvocadoes.ViewModels.AdminUserEditViewModel
+@{
+    ViewData["Title"] = $"Edit User: {Model.FullName}";
+}
+
+<nav class="mb-5 flex flex-wrap items-center gap-2 text-sm text-ink-muted" aria-label="Breadcrumb">
+    <a class="font-semibold text-avocado-500 hover:text-avocado-900" asp-controller="AdminUsers" asp-action="Index">Manage Users</a>
+    <span aria-hidden="true">/</span>
+    <a class="font-semibold text-avocado-500 hover:text-avocado-900" asp-controller="AdminUsers" asp-action="Details" asp-route-id="@Model.UserId">User Details</a>
+    <span aria-hidden="true">/</span>
+    <span class="text-ink">Edit User</span>
+</nav>
+
+<section class="mx-auto w-full max-w-2xl" aria-labelledby="edit-user-heading">
+    <div class="card">
+        <header class="mb-5 border-b border-line pb-4">
+            <p class="kicker">User Profile &amp; Role</p>
+            <h1 id="edit-user-heading" class="mt-1 text-xl font-bold">Edit User</h1>
+            <p class="mt-1 text-sm text-ink-muted">Update account display name, email, and role.</p>
+        </header>
+
+        @if (Model.IsCurrentUser || Model.IsOnlyAdmin)
+        {
+            <div class="alert alert-warning" role="status">
+                <span>
+                    <strong>Admin safeguard:</strong>
+                    @(Model.IsCurrentUser
+                        ? "You cannot demote your own currently signed-in Admin account."
+                        : "This is the only active Admin account and cannot be demoted.")
+                </span>
+            </div>
+        }
+
+        <form asp-controller="AdminUsers" asp-action="Edit" asp-route-id="@Model.UserId" method="post" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <div class="form-group">
+                <label asp-for="FullName" class="field-label"></label>
+                <input asp-for="FullName" class="field" maxlength="120" />
+                <span asp-validation-for="FullName" class="field-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Email" class="field-label"></label>
+                <input asp-for="Email" type="email" class="field" maxlength="254" />
+                <span asp-validation-for="Email" class="field-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Role" class="field-label"></label>
+                <select asp-for="Role" class="field">
+                    <option value="User">User</option>
+                    <option value="Admin">Admin</option>
+                </select>
+                <span asp-validation-for="Role" class="field-error"></span>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a class="btn btn-secondary" asp-controller="AdminUsers" asp-action="Details" asp-route-id="@Model.UserId">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

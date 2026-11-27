@@ -1,0 +1,98 @@
+@model PureAvocadoes.ViewModels.AdminUserCreateViewModel
+@{
+    ViewData["Title"] = "Add User";
+}
+
+<nav class="mb-5 flex flex-wrap items-center gap-2 text-sm text-ink-muted" aria-label="Breadcrumb">
+    <a class="font-semibold text-avocado-500 hover:text-avocado-900" asp-controller="AdminUsers" asp-action="Index">Manage Users</a>
+    <span aria-hidden="true">/</span>
+    <span class="text-ink">Add User</span>
+</nav>
+
+<section class="mx-auto w-full max-w-2xl" aria-labelledby="create-user-heading">
+    <div class="card">
+        <header class="mb-5 border-b border-line pb-4">
+            <p class="kicker">User Provisioning</p>
+            <h1 id="create-user-heading" class="mt-1 text-xl font-bold">Add User</h1>
+            <p class="mt-1 text-sm text-ink-muted">Create a new Pure Avocadoes user or administrator account.</p>
+        </header>
+
+        <form asp-controller="AdminUsers" asp-action="Create" method="post" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <div class="form-group">
+                <label asp-for="FullName" class="field-label"></label>
+                <input asp-for="FullName" class="field" maxlength="120" />
+                <span asp-validation-for="FullName" class="field-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Email" class="field-label"></label>
+                <input asp-for="Email" type="email" class="field" maxlength="254" />
+                <span asp-validation-for="Email" class="field-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Role" class="field-label"></label>
+                <select asp-for="Role" class="field">
+                    <option value="User">User</option>
+                    <option value="Admin">Admin</option>
+                </select>
+                <span asp-validation-for="Role" class="field-error"></span>
+            </div>
+
+            <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+                <div class="form-group">
+                    <label asp-for="Password" class="field-label"></label>
+                    <div class="relative">
+                        <input asp-for="Password" type="password" class="field pr-11" autocomplete="new-password" data-password-input />
+                        <button type="button"
+                                class="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-control text-ink-muted transition-colors duration-150 hover:bg-paper-muted hover:text-ink"
+                                data-password-toggle aria-label="Show password" aria-pressed="false">
+                            <svg class="pa-eye-icon-show" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="pa-eye-icon-hide" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="field-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ConfirmPassword" class="field-label"></label>
+                    <div class="relative">
+                        <input asp-for="ConfirmPassword" type="password" class="field pr-11" autocomplete="new-password" data-password-input />
+                        <button type="button"
+                                class="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-control text-ink-muted transition-colors duration-150 hover:bg-paper-muted hover:text-ink"
+                                data-password-toggle aria-label="Show password" aria-pressed="false">
+                            <svg class="pa-eye-icon-show" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="pa-eye-icon-hide" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <span asp-validation-for="ConfirmPassword" class="field-error"></span>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Create User</button>
+                <a class="btn btn-secondary" asp-controller="AdminUsers" asp-action="Index">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
