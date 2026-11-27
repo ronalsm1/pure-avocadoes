@@ -1,0 +1,207 @@
+@model PureAvocadoes.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <p class="kicker">Platform Operations</p>
+        <h1 class="mt-1 font-display text-[1.75rem] font-medium uppercase tracking-[0.03em]">Admin Dashboard</h1>
+        <p class="mt-1 text-sm text-ink-muted">Platform overview across movies, audience reviews, and user accounts.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <a class="btn btn-primary" href="/Admin/Movies">Manage Movies</a>
+        <a class="btn btn-secondary" href="/Admin/Users">Manage Users</a>
+    </div>
+</div>
+
+@if (Model.HasDatabaseError)
+{
+    <section aria-label="Dashboard error">
+        <div class="alert alert-danger" role="alert">
+            <span><strong>Error:</strong> @(Model.ErrorMessage ?? "Unable to load dashboard metrics right now.")</span>
+        </div>
+    </section>
+}
+else
+{
+    <section class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Platform summary metrics">
+        <article class="rounded-card border border-line bg-white p-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Total Movies</p>
+            <p class="mt-1 text-2xl font-bold tabular-nums">@Model.TotalMovies</p>
+            <p class="mt-1 text-xs text-ink-muted">
+                <span class="tabular-nums">@Model.RatedMovieCount</span> rated &middot;
+                <a class="font-semibold text-avocado-500 hover:text-avocado-900" href="/Admin/Movies">Manage</a>
+            </p>
+        </article>
+
+        <article class="rounded-card border border-line bg-white p-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Total Users</p>
+            <p class="mt-1 text-2xl font-bold tabular-nums">@Model.TotalUsers</p>
+            <p class="mt-1 text-xs text-ink-muted">
+                <span class="tabular-nums">@Model.RegularUserCount</span> User,
+                <span class="tabular-nums">@Model.AdminUserCount</span> Admin &middot;
+                <a class="font-semibold text-avocado-500 hover:text-avocado-900" href="/Admin/Users">Manage</a>
+            </p>
+        </article>
+
+        <article class="rounded-card border border-line bg-white p-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Total Reviews</p>
+            <p class="mt-1 text-2xl font-bold tabular-nums">@Model.TotalReviews</p>
+            <p class="mt-1 text-xs text-ink-muted">
+                @(Model.TotalReviews == 0 ? "No reviews submitted yet" : "Submitted across catalog")
+            </p>
+        </article>
+
+        <article class="rounded-card border border-line bg-white p-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted">Overall Rating</p>
+            <p class="mt-1 text-2xl font-bold tabular-nums">
+                @(Model.HasReviews ? $"{Model.FormattedOverallAverage} / 5" : "--")
+            </p>
+            <p class="mt-1 text-xs text-ink-muted">
+                @(Model.HasReviews ? "Overall audience score" : "No ratings yet")
+            </p>
+        </article>
+    </section>
+
+    <div class="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <section class="card" aria-labelledby="recent-movies-heading">
+            <div class="mb-3 flex items-baseline justify-between gap-3">
+                <h2 id="recent-movies-heading" class="section-title">Recently Added Movies</h2>
+                <a class="shrink-0 text-xs font-semibold uppercase tracking-[0.04em] text-avocado-500 hover:text-avocado-900" href="/Admin/Movies/Create">Add Movie</a>
+            </div>
+
+            @if (Model.RecentMovies.Count == 0)
+            {
+                <p class="py-4 text-center text-sm text-ink-muted">No movies have been added to the catalog yet.</p>
+            }
+            else
+            {
+                <ul class="divide-y divide-line">
+                    @foreach (var movie in Model.RecentMovies)
+                    {
+                        <li class="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                            <div class="min-w-0">
+                                <a class="font-semibold text-avocado-500 hover:text-avocado-900" href="/Movies/Details/@movie.MovieId">@movie.Title</a>
+                                <p class="text-xs text-ink-muted">
+                                    <span>@movie.Genre</span>
+                                    <span aria-hidden="true">&middot;</span>
+                                    <span class="tabular-nums">@movie.ReleaseYear</span>
+                                    <span aria-hidden="true">&middot;</span>
+                                    <span>Added @movie.FormattedAddedDate</span>
+                                </p>
+                            </div>
+                            <div class="flex shrink-0 items-center gap-2 text-xs">
+                                <span class="font-semibold tabular-nums">@movie.FormattedScore</span>
+                                <span class="text-ink-muted">@movie.ReviewCountLabel</span>
+                                <a class="font-semibold text-avocado-500 hover:text-avocado-900" href="/Admin/Movies/Edit/@movie.MovieId">Edit</a>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="card" aria-labelledby="top-rated-movies-heading">
+            <div class="mb-3 flex items-baseline justify-between gap-3">
+                <h2 id="top-rated-movies-heading" class="section-title">Highest-Rated Movies</h2>
+                <a class="shrink-0 text-xs font-semibold uppercase tracking-[0.04em] text-avocado-500 hover:text-avocado-900" href="/Admin/Movies">All Movies</a>
+            </div>
+
+            @if (Model.HighestRatedMovies.Count == 0)
+            {
+                <p class="py-4 text-center text-sm text-ink-muted">No rated movies yet. Ratings appear once audience reviews are submitted.</p>
+            }
+            else
+            {
+                <ul class="divide-y divide-line">
+                    @foreach (var movie in Model.HighestRatedMovies)
+                    {
+                        <li class="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                            <div class="min-w-0">
+                                <a class="font-semibold text-avocado-500 hover:text-avocado-900" href="/Movies/Details/@movie.MovieId">@movie.Title</a>
+                                <p class="text-xs text-ink-muted">
+                                    <span>@movie.Genre</span>
+                                    <span aria-hidden="true">&middot;</span>
+                                    <span class="tabular-nums">@movie.ReleaseYear</span>
+                                </p>
+                            </div>
+                            <div class="flex shrink-0 items-center gap-2 text-xs">
+                                <span class="font-semibold tabular-nums">@movie.FormattedScore / 5</span>
+                                <span class="text-ink-muted">@movie.ReviewCountLabel</span>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <section class="card" aria-labelledby="recent-reviews-heading">
+            <div class="mb-3 flex items-baseline justify-between gap-3">
+                <h2 id="recent-reviews-heading" class="section-title">Recent Review Activity</h2>
+                <a class="shrink-0 text-xs font-semibold uppercase tracking-[0.04em] text-avocado-500 hover:text-avocado-900" href="/Movies">Browse Catalog</a>
+            </div>
+
+            @if (Model.RecentReviews.Count == 0)
+            {
+                <p class="py-4 text-center text-sm text-ink-muted">No audience reviews have been submitted yet.</p>
+            }
+            else
+            {
+                <ul class="divide-y divide-line">
+                    @foreach (var review in Model.RecentReviews)
+                    {
+                        <li class="py-2.5">
+                            <div class="flex flex-wrap items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <a class="font-semibold text-avocado-500 hover:text-avocado-900" href="/Movies/Details/@review.MovieId">@review.MovieTitle</a>
+                                    <p class="text-xs text-ink-muted">
+                                        <span>By @review.ReviewerName</span>
+                                        <span aria-hidden="true">&middot;</span>
+                                        <span>@(review.IsEdited ? $"Updated {review.FormattedDate}" : review.FormattedDate)</span>
+                                    </p>
+                                </div>
+                                <span class="shrink-0 text-xs font-semibold tabular-nums">@review.Rating / 5</span>
+                            </div>
+                            <p class="mt-1 text-sm text-ink-muted">@review.Excerpt</p>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="card" aria-labelledby="recent-users-heading">
+            <div class="mb-3 flex items-baseline justify-between gap-3">
+                <h2 id="recent-users-heading" class="section-title">Recently Registered Users</h2>
+                <a class="shrink-0 text-xs font-semibold uppercase tracking-[0.04em] text-avocado-500 hover:text-avocado-900" href="/Admin/Users">All Users</a>
+            </div>
+
+            @if (Model.RecentUsers.Count == 0)
+            {
+                <p class="py-4 text-center text-sm text-ink-muted">No registered accounts yet.</p>
+            }
+            else
+            {
+                <ul class="divide-y divide-line">
+                    @foreach (var user in Model.RecentUsers)
+                    {
+                        var isAdminRole = string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase);
+                        <li class="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                            <div class="min-w-0">
+                                <a class="font-semibold text-avocado-500 hover:text-avocado-900" href="/Admin/Users/Details/@user.UserId">@user.FullName</a>
+                                <p class="text-xs text-ink-muted">
+                                    <span>Joined @user.FormattedJoinedDate</span>
+                                    <span aria-hidden="true">&middot;</span>
+                                    <span class="tabular-nums">@user.ReviewCount @(user.ReviewCount == 1 ? "review" : "reviews")</span>
+                                </p>
+                            </div>
+                            <span class="shrink-0 rounded-[3px] px-2 py-0.5 text-xs font-semibold @(isAdminRole ? "bg-gold-100 text-warning-fg" : "bg-avocado-100 text-avocado-500")">@user.Role</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+}
